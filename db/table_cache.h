@@ -15,6 +15,18 @@
 #include "leveldb/table.h"
 #include "port/port.h"
 
+// 核心功能
+// 文件缓存管理：
+
+// 使用内部缓存（Cache）存储文件表（Table）的元数据，避免频繁访问文件系统。
+// 提供文件访问接口：
+
+// NewIterator：为指定文件创建迭代器，支持数据读取操作。
+// Get：在指定文件中查找键值对。
+// Evict：从缓存中移除指定文件的记录。
+// 线程安全：
+
+// 内部实现了必要的同步机制，支持并发访问。
 namespace leveldb {
 
 class Env;

@@ -43,18 +43,23 @@ using leveldb::Status;
 using leveldb::WritableFile;
 using leveldb::WriteBatch;
 using leveldb::WriteOptions;
-
+/*
+ * extern "C": 编译器 按照C语言的方式来处理指定代码
+ */
 extern "C" {
-
+// 在C++中 使用 struct 相当于 Java中的类-class
 struct leveldb_t {
   DB* rep;
 };
+// 迭代器
 struct leveldb_iterator_t {
   Iterator* rep;
 };
+// 批量写
 struct leveldb_writebatch_t {
   WriteBatch rep;
 };
+//快照
 struct leveldb_snapshot_t {
   const Snapshot* rep;
 };

@@ -17,6 +17,53 @@
 #include "util/coding.h"
 #include "util/logging.h"
 
+
+// 代码重点
+// 1. 配置参数 (config 命名空间)
+// 定义了与存储和压缩相关的常量：
+// kNumLevels：多级存储的层数，默认为 7。
+// kL0_CompactionTrigger：触发 Level-0 层文件压缩的文件数量。
+// kL0_StopWritesTrigger：当 Level-0 文件数量超过此值时，停止写操作。
+// kMaxMemCompactLevel：MemTable 写入磁盘时，优先推送到的目标层级。
+// kReadBytesPeriod：迭代过程中采样数据读取的字节间隔。
+// 2. InternalKey 和内部键的处理
+// InternalKey 的意义
+// 用户键 (user_key) 与 元信息（序列号、操作类型）组合而成的键。
+// 内部键的用途：
+// 内部排序时优先按用户键排序，冲突时按序列号（从高到低）排序。
+// 区分 Put 和 Delete 类型操作（kTypeValue 和 kTypeDeletion）。
+// InternalKey 的主要功能
+// 内部键编码与解码：
+// AppendInternalKey：序列化 ParsedInternalKey。
+// ParseInternalKey：反序列化 Slice，解析出 ParsedInternalKey 的组成部分。
+// ExtractUserKey：从内部键中提取用户键。
+// InternalKeyEncodingLength：获取编码长度（用户键长度 + 8 字节元数据）。
+// 字符串化：
+// DebugString：生成可读字符串，用于调试。
+// ParsedInternalKey 结构
+// 表示解码后的内部键，包含：
+// user_key：用户键。
+// sequence：序列号，用于排序。
+// type：键类型（删除或存储）。
+// 3. 内部比较器 (InternalKeyComparator)
+// 核心功能：比较两个内部键。
+// 用户键比较优先：调用用户定义的 Comparator。
+// 序列号降序：当用户键相同时，序列号较大的键更小。
+// 接口实现：
+// Compare：比较 Slice 或 InternalKey。
+// FindShortestSeparator 和 FindShortSuccessor：为迭代器优化的键截断方法。
+// 设计目标：提高数据库的读写效率，确保排序规则一致。
+// 4. 过滤策略 (InternalFilterPolicy)
+// 包装用户定义的过滤器（如 Bloom Filter）。
+// 作用：将内部键的过滤映射到用户键的过滤，避免误操作。
+// 接口：
+// CreateFilter：为用户键生成过滤器。
+// KeyMayMatch：判断用户键是否可能匹配过滤器。
+// 5. 辅助类 LookupKey
+// 功能：封装用于内存表查找的键数据结构。
+// 兼容 MemTable 的键格式。
+// 可从中提取用户键或内部键。
+// 内存优化：预分配固定大小的 char 数组 (space_) 以减少堆分配。
 namespace leveldb {
 
 // Grouping of constants.  We may want to make some of these

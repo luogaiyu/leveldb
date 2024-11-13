@@ -17,6 +17,47 @@
 #include "leveldb/env.h"
 #include "port/port.h"
 #include "port/thread_annotations.h"
+// 代码重点
+// 1. DBImpl 的核心职责
+// LevelDB 数据库的具体实现类，继承自公共接口 DB。
+// 实现了 LevelDB 的所有核心功能，包括数据管理、压缩、文件操作和多线程任务处理。
+// 2. 数据管理（Put、Get、Delete、Write）
+// Put：向数据库插入或更新一个键值对。
+// Delete：删除指定键的值。
+// Write：支持批量写操作，处理 WriteBatch 对象。
+// Get：根据键检索对应的值。
+// NewIterator：提供数据的遍历接口，返回一个迭代器。
+// 3. 存储架构与压缩（Compaction）
+// MemTable 和 SSTable 管理：
+// 使用 MemTable 存储内存中的写入数据。
+// 将 MemTable 数据写入磁盘生成 SSTable，支持不可变存储。
+// 压缩管理：
+// 自动后台压缩（BackgroundCompaction）：合并不同层级的 SSTable，优化存储性能。
+// 手动压缩（CompactRange）：允许用户主动压缩指定范围内的数据。
+// 4. 快照与一致性视图
+// 快照功能（GetSnapshot 和 ReleaseSnapshot）：
+// 允许用户获取数据库某一时刻的只读视图，支持一致性读取操作。
+// SnapshotList：管理所有快照对象的生命周期。
+// 5. 文件与日志恢复
+// 恢复机制：
+// Recover：从日志文件中恢复数据库的最新状态。
+// 日志管理：通过 logfile_ 和 log::Writer 记录变更，用于崩溃后的数据恢复。
+// 文件清理：
+// RemoveObsoleteFiles：删除多余的文件，节省存储空间。
+// 6. 多线程支持
+// 使用 port::Mutex 和 port::CondVar 来同步多线程任务。
+// 管理后台任务：
+// BackgroundCall：调用后台任务（如压缩）。
+// MaybeScheduleCompaction：根据需求触发后台压缩操作。
+// 7. 数据一致性与错误处理
+// MakeRoomForWrite：在写操作时确保有足够的空间，必要时触发压缩。
+// RecordBackgroundError：记录后台操作中的错误，确保数据库运行稳定。
+// 8. 其他辅助功能
+// SanitizeOptions：校验和处理用户传入的数据库选项。
+// TEST_ 方法：
+// 提供了一些测试接口，如 TEST_CompactRange 和 TEST_NewInternalIterator，供开发调试使用。
+// 性能统计（CompactionStats）：
+// 跟踪压缩操作的性能，包括耗时（micros）、读取字节数和写入字节数。
 
 namespace leveldb {
 

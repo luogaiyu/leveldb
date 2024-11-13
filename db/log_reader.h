@@ -10,11 +10,10 @@
 #include "db/log_format.h"
 #include "leveldb/slice.h"
 #include "leveldb/status.h"
-
+//Reader 类的核心目的是 从日志文件中读取并解析记录，同时提供 数据完整性校验、错误报告 和 偏移管理 功能，确保 LevelDB 在日志文件读取过程中能够有效应对数据损坏和其他异常情况。
 namespace leveldb {
 
 class SequentialFile;
-
 namespace log {
 
 class Reader {

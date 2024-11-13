@@ -10,6 +10,22 @@
 #include <vector>
 
 #include "db/dbformat.h"
+// VersionEdit 用于描述数据库版本的变更，包括文件的新增与删除、日志编号的更新、压缩信息的记录等。它帮助管理 LevelDB 的多版本控制和层级式存储。
+// 核心组成
+// 文件元数据结构 FileMetaData：
+
+// 描述单个文件的信息，如编号、大小、引用计数、最小/最大键值等。
+// 关键字段：
+
+// 基础信息：比较器名称、日志编号、文件编号、序列号。
+// 文件操作：新增文件集合、新增的压缩指针、删除文件集合。
+// 主要功能：
+
+// 添加/删除文件 (AddFile, RemoveFile)。
+// 设置元信息 (SetComparatorName, SetLogNumber 等)。
+// 记录压缩指针 (SetCompactPointer)。
+// 支持序列化/反序列化 (EncodeTo, DecodeFrom)。
+// 提供调试信息 (DebugString)。
 
 namespace leveldb {
 

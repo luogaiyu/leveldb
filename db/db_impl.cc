@@ -37,10 +37,12 @@
 
 namespace leveldb {
 
+// 非表缓存文件的数量
 const int kNumNonTableCacheFiles = 10;
 
 // Information kept for every waiting writer
 struct DBImpl::Writer {
+  //explicit: 用来防止隐式转换s
   explicit Writer(port::Mutex* mu)
       : batch(nullptr), sync(false), done(false), cv(mu) {}
 

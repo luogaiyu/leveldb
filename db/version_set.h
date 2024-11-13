@@ -24,6 +24,20 @@
 #include "port/port.h"
 #include "port/thread_annotations.h"
 
+// 版本管理：
+// 当前版本切换：LogAndApply 将 VersionEdit 应用到当前版本。
+// 恢复操作：Recover 从持久化存储中恢复版本元数据。
+// 版本链管理：AppendVersion 维护版本的双向链表。
+// 文件管理：
+// 分配和回收文件编号：NewFileNumber，ReuseFileNumber。
+// 标记已使用文件编号：MarkFileNumberUsed。
+// 压缩相关：
+// 选择需要压缩的层级和文件：PickCompaction，CompactRange。
+// 判断是否需要压缩：NeedsCompaction。
+// 其他：
+// 统计每层文件数和总大小：NumLevelFiles，NumLevelBytes。
+// 获取文件的范围和层级信息：GetRange，LevelSummary。
+// 核心功能：文件分层管理、版本切换、压缩优化，确保一致性和高效存储。
 namespace leveldb {
 
 namespace log {

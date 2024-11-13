@@ -16,17 +16,41 @@
 #include "port/port.h"
 #include "util/mutexlock.h"
 #include "util/testutil.h"
+/**
+ * start 20241031 added by yinbowen 
+ * namespace 定义命名空间, 不同命名空间可以创建相同的命名的实体 
+ */
+namespace leveldb { 
+/**
+ * end 20241031 added by yinbowen 
+ */
 
-namespace leveldb {
-
-namespace {
-
+namespace {// 定义匿名命名空间
+/**
+ * std::string 字符串类型
+ * 在C++中方法的定义
+ * returnType functionName (params) {
+ * 
+ * }
+ */
+/**
+ * start 20241031 added by @yinbowen
+ * MakeKey 方法:
+ * 将一个无符号整数转换为一个 16 位的字符串，不足 16 位时前面补零。
+ */
 std::string MakeKey(unsigned int num) {
   char buf[30];
   std::snprintf(buf, sizeof(buf), "%016u", num);
   return std::string(buf);
 }
+/**
+ * end 20241031 added by @yinbowen
+ */
 
+/**
+ * start 20241031 added by @yinbowen 
+ * 这里的BM指的是 benchmark 主要是测试 LogAndApply这个方法
+ */
 void BM_LogAndApply(benchmark::State& state) {
   const int num_base_files = state.range(0);
 

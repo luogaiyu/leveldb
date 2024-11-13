@@ -1,10 +1,60 @@
 // Copyright (c) 2011 The LevelDB Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
-
+/**
+ * 业务背景: 这个代码实现了完整的跳表数据结构
+ */
 #ifndef STORAGE_LEVELDB_DB_SKIPLIST_H_
 #define STORAGE_LEVELDB_DB_SKIPLIST_H_
+/**
+ * 对于C++来说 内联函数 模版或者小型项目 是可以将对应的实现逻辑写在代码中的
+ */
 
+// SkipList
+
+// 主类，表示跳表的核心数据结构。
+// 包含内部逻辑、节点管理和操作方法（如插入、搜索等）。
+// Node
+
+// 嵌套结构，表示跳表中的节点。
+// 每个节点保存一个键（key）和多个指向下一节点的指针（next_）。
+// Comparator
+
+// 比较器类，用于比较两个键的大小关系。
+// 以模板参数的形式传入跳表，支持自定义比较逻辑。
+// Iterator
+
+// 跳表的迭代器类，用于遍历跳表中的节点。
+// 提供操作方法，如移动到下一个节点或第一个节点等。
+// Arena
+
+// 内存分配器，管理跳表的内存分配（例如节点的分配）。
+// 通过 AllocateAligned 方法提供对齐的内存分配支持。
+// Random
+
+// 随机数生成器，用于生成节点的随机高度。
+// 通过概率分布控制跳表的层级分布特性。
+
+
+// 模板类的特殊性
+
+// C++ 的模板类需要在编译时实例化，而模板的实现必须在编译器能够看到的地方。
+// 因此，模板类通常将声明和实现都放在头文件中，而不像普通类那样分为 .h 和 .cpp 文件。
+// 性能优化
+
+// 跳表的实现中，许多函数（如 Iterator 方法和内联函数）被标记为 inline，建议编译器在调用时直接展开，减少函数调用开销。
+// 为了支持 inline 优化，这些函数的定义也需要放在头文件中。
+// 简化管理
+
+// 头文件直接包含实现逻辑，便于模板类的使用者只通过头文件即可访问全部功能。
+// 避免分散到多个文件中导致维护复杂性增加。
+
+// 对外暴露的主要特征：
+// 数据存储有序，支持自定义排序。
+// 提供基本操作接口：Insert、Contains。
+// 提供完整的遍历功能：Iterator。
+// 支持多线程读无锁，写需要同步。
+// 可定制比较器和内存管理方式。
 // Thread safety
 // -------------
 //
@@ -36,112 +86,112 @@
 
 namespace leveldb {
 
-template <typename Key, class Comparator>
+// 创建一个模版类, 类似Java中的范型
+template <typename Key, class Comparator> 
 class SkipList {
  private:
   struct Node;
 
  public:
-  // Create a new SkipList object that will use "cmp" for comparing keys,
-  // and will allocate memory using "*arena".  Objects allocated in the arena
-  // must remain allocated for the lifetime of the skiplist object.
+  // 通过两个参数, 定义对象创建的方式
   explicit SkipList(Comparator cmp, Arena* arena);
-
+  
+  // 禁止拷贝构造函数 和 拷贝赋值函数 = delete是c++中的一种特殊用法
   SkipList(const SkipList&) = delete;
   SkipList& operator=(const SkipList&) = delete;
 
-  // Insert key into the list.
-  // REQUIRES: nothing that compares equal to key is currently in the list.
+  // 将当前的key 插入到列表中
+  // 要求: 当前列表中没有与当前的key相等的元素
   void Insert(const Key& key);
-
-  // Returns true iff an entry that compares equal to key is in the list.
+  // 判断当前的列表 是否包含当前的key
   bool Contains(const Key& key) const;
 
-  // Iteration over the contents of a skip list
+  // 迭代器: 可以遍历跳表的内容
   class Iterator {
    public:
-    // Initialize an iterator over the specified list.
-    // The returned iterator is not valid.
+    // 构造函数
     explicit Iterator(const SkipList* list);
 
-    // Returns true iff the iterator is positioned at a valid node.
+  // 检查迭代器是否有效
     bool Valid() const;
 
-    // Returns the key at the current position.
+     // 返回当前位置的键
     // REQUIRES: Valid()
     const Key& key() const;
 
-    // Advances to the next position.
+     // 前进到下一个位置
     // REQUIRES: Valid()
     void Next();
 
-    // Advances to the previous position.
+     // 前进到前一个位置
     // REQUIRES: Valid()
     void Prev();
 
-    // Advance to the first entry with a key >= target
+     // 前进到第一个键 >= target 的条目
     void Seek(const Key& target);
 
-    // Position at the first entry in list.
-    // Final state of iterator is Valid() iff list is not empty.
+    // 定位到列表的第一个条目
     void SeekToFirst();
 
-    // Position at the last entry in list.
-    // Final state of iterator is Valid() iff list is not empty.
+    // 定位到列表的最后一个条目
     void SeekToLast();
 
    private:
-    const SkipList* list_;
-    Node* node_;
-    // Intentionally copyable
+    const SkipList* list_;  // 指向 SkipList 的指针
+    Node* node_;  // 指向当前节点的指针
+     // 默认拷贝构造函数和拷贝赋值运算符是可用的
   };
 
  private:
-  enum { kMaxHeight = 12 };
-
+  enum { kMaxHeight = 12 }; // 使用enum 会防止内存分配, todo
+  // inline 建议编译器 在调用该函数的时候直接展开函数体
+  // 内联函数: 能够降低
   inline int GetMaxHeight() const {
+    // 通过原子的方式来取 max_height_ 的数值
     return max_height_.load(std::memory_order_relaxed);
   }
 
+  // 创建一个新节点，包含给定的键和高度
   Node* NewNode(const Key& key, int height);
+  
+  // 生成一个随机的高度值
   int RandomHeight();
+  
+  // 判断两个键是否相等
   bool Equal(const Key& a, const Key& b) const { return (compare_(a, b) == 0); }
 
-  // Return true if key is greater than the data stored in "n"
+  // 判断给定的键是否大于节点 "n" 中存储的数据
   bool KeyIsAfterNode(const Key& key, Node* n) const;
 
-  // Return the earliest node that comes at or after key.
-  // Return nullptr if there is no such node.
-  //
-  // If prev is non-null, fills prev[level] with pointer to previous
-  // node at "level" for every level in [0..max_height_-1].
+  // 返回第一个键大于或等于给定键的节点
+  // 如果没有这样的节点，则返回 nullptr
+  // 如果 prev 非空，则填充 prev[level] 为 "level" 层的前一个节点的指针，对于 [0..max_height_-1] 中的每一层
   Node* FindGreaterOrEqual(const Key& key, Node** prev) const;
 
-  // Return the latest node with a key < key.
-  // Return head_ if there is no such node.
+  // 返回键小于给定键的最新节点
+  // 如果没有这样的节点，则返回 head_
   Node* FindLessThan(const Key& key) const;
 
-  // Return the last node in the list.
-  // Return head_ if list is empty.
+  // 返回列表中的最后一个节点
+  // 如果列表为空，则返回 head_
   Node* FindLast() const;
 
-  // Immutable after construction
-  Comparator const compare_;
-  Arena* const arena_;  // Arena used for allocations of nodes
+  // 在构造后不可变
+  Comparator const compare_; // 指针本身不可变
+  Arena* const arena_;  // 用于节点分配的 Arena
+  Node* const head_;// 指针本身不可变
 
-  Node* const head_;
+  // 仅由 Insert() 修改。读者可以竞态读取，但过时的值是可以接受的
+  std::atomic<int> max_height_;  // 整个列表的高度
 
-  // Modified only by Insert().  Read racily by readers, but stale
-  // values are ok.
-  std::atomic<int> max_height_;  // Height of the entire list
-
-  // Read/written only by Insert().
+  // 仅由 Insert() 读写
   Random rnd_;
 };
 
-// Implementation details follow
+// 接下来 是具体的实现细节:  嵌套结构体 Node 的实现
 template <typename Key, class Comparator>
 struct SkipList<Key, Comparator>::Node {
+
   explicit Node(const Key& k) : key(k) {}
 
   Key const key;
