@@ -9,7 +9,7 @@
 
 #include "leveldb/export.h"
 #include "leveldb/iterator.h"
-
+// 
 namespace leveldb {
 
 class Block;
@@ -19,7 +19,8 @@ struct Options;
 class RandomAccessFile;
 struct ReadOptions;
 class TableCache;
-
+// 这个代码定义了一个名为 Table 的类，用于表示 LevelDB 中的一个持久化、不可变的键值对存储表。
+// 它提供了打开表、创建迭代器、获取键的近似文件偏移量等功能，并且支持多线程安全访问。
 // A Table is a sorted map from strings to strings.  Tables are
 // immutable and persistent.  A Table may be safely accessed from
 // multiple threads without external synchronization.

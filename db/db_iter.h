@@ -1,7 +1,9 @@
 // Copyright (c) 2011 The LevelDB Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
-
+/**
+ * 防止重复编译, 所以需要通过变量方式的方式告诉编译器某些变量已经被编译过了
+ */
 #ifndef STORAGE_LEVELDB_DB_DB_ITER_H_
 #define STORAGE_LEVELDB_DB_DB_ITER_H_
 

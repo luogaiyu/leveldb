@@ -12,7 +12,9 @@
 //
 // Most people will want to use the builtin bloom filter support (see
 // NewBloomFilterPolicy() below).
-
+/**
+ * 用途：FilterPolicy 用于创建和验证过滤器，这些过滤器帮助 LevelDB 判断是否需要从磁盘读取数据。其实现通常是用于提升查询效率，减少不必要的磁盘访问。
+ */
 #ifndef STORAGE_LEVELDB_INCLUDE_FILTER_POLICY_H_
 #define STORAGE_LEVELDB_INCLUDE_FILTER_POLICY_H_
 

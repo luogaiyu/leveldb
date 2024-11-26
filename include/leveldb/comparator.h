@@ -4,7 +4,8 @@
 
 #ifndef STORAGE_LEVELDB_INCLUDE_COMPARATOR_H_
 #define STORAGE_LEVELDB_INCLUDE_COMPARATOR_H_
-
+// 这段代码定义了一个抽象类 Comparator，用于为 LevelDB 的键提供全序排序规则。
+// 它主要作用是定义键的比较逻辑，确保键值对在存储和查询时能被正确组织和检索。
 #include <string>
 
 #include "leveldb/export.h"

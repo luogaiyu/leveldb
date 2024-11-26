@@ -18,7 +18,8 @@
 #include "leveldb/export.h"
 #include "leveldb/slice.h"
 #include "leveldb/status.h"
-
+// 这个类定义了一个名为 Iterator 的接口，
+// 用于遍历键值对序列。以下是这个类的主要信息：
 namespace leveldb {
 
 class LEVELDB_EXPORT Iterator {

@@ -25,7 +25,8 @@
 
 #include "leveldb/export.h"
 #include "leveldb/status.h"
-
+// 这个文件定义了 leveldb 中的 WriteBatch 类，用于原子性地将一系列更新应用到数据库。
+// WriteBatch 类支持插入和删除操作，并且可以通过迭代器遍历批处理中的操作。
 namespace leveldb {
 
 class Slice;

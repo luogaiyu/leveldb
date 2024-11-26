@@ -38,7 +38,16 @@
 #define LEVELDB_DELETEFILE_UNDEFINED
 #endif  // defined(DeleteFile)
 #endif  // defined(_WIN32)
+/**
+ * 
+1. Env 类简介
+Env 是一个操作系统抽象接口，允许用户通过自定义实现来替代默认环境，提供对底层系统资源的访问和控制。
 
+特点：
+所有实现都需要支持多线程并发访问。
+提供默认实现 Env::Default()，适用于一般环境。
+支持覆盖部分功能，通过 EnvWrapper 类代理调用目标 Env 实现。
+ */
 namespace leveldb {
 
 class FileLock;

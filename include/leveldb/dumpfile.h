@@ -11,6 +11,13 @@
 #include "leveldb/export.h"
 #include "leveldb/status.h"
 
+// 这段代码定义了一个辅助工具函数 DumpFile，
+// 用于将 LevelDB 存储文件的内容导出为可读的文本格式，通常用于调试或数据审查。以下是对代码重点和设计的详细解释。
+// DumpFile 的主要作用是：
+
+// 将指定的 LevelDB 存储文件（如 SST 文件）的内容转换为文本形式。
+// 输出结果是按行分隔的文本，每行对应文件中的一个条目。
+// 调用 WritableFile 的 Append() 方法逐行将文本写入目标输出（如文件或内存缓冲区）。
 namespace leveldb {
 
 // Dump the contents of the file named by fname in text format to

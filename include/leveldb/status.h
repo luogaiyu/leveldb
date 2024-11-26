@@ -18,7 +18,8 @@
 
 #include "leveldb/export.h"
 #include "leveldb/slice.h"
-
+// 这段代码定义了 LevelDB 中的 Status 类，它用于封装操作的结果，可以表示成功或错误的状态，
+// 并附带错误信息。Status 类在 LevelDB 中被广泛使用，用于表示各种操作（如读取、写入等）是否成功，并且在发生错误时能够提供具体的错误类型和信息。
 namespace leveldb {
 
 class LEVELDB_EXPORT Status {

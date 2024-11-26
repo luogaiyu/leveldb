@@ -62,13 +62,16 @@
 namespace leveldb {
 
 class MemTable;
-class TableCache;
+class TableCache;// Table Cache 是在磁盘文件在内存中缓存的新的索引
+
+//  版本相关
 class Version;
 class VersionEdit;
 class VersionSet;
 
 class DBImpl : public DB {
  public:
+ // 传入两个参数 option + dbname
   DBImpl(const Options& options, const std::string& dbname);
 
   DBImpl(const DBImpl&) = delete;
@@ -84,6 +87,7 @@ class DBImpl : public DB {
   Status Get(const ReadOptions& options, const Slice& key,
              std::string* value) override;
   Iterator* NewIterator(const ReadOptions&) override;
+  // 
   const Snapshot* GetSnapshot() override;
   void ReleaseSnapshot(const Snapshot* snapshot) override;
   bool GetProperty(const Slice& property, std::string* value) override;

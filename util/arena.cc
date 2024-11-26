@@ -5,11 +5,12 @@
 #include "util/arena.h"
 
 namespace leveldb {
-
+// 设置默认的kBlockSize 是 4096?
 static const int kBlockSize = 4096;
 
+// 构造函数 对变量进行初始化, 通过主动初始化, 通过主动对它进行赋值
 Arena::Arena()
-    : alloc_ptr_(nullptr), alloc_bytes_remaining_(0), memory_usage_(0) {}
+    : alloc_ptr_(nullptr), alloc_bytes_remaining_(0), memory_usage_(0) {}// 初始化 这些变量
 
 Arena::~Arena() {
   for (size_t i = 0; i < blocks_.size(); i++) {
@@ -36,7 +37,7 @@ char* Arena::AllocateFallback(size_t bytes) {
 }
 
 char* Arena::AllocateAligned(size_t bytes) {
-  const int align = (sizeof(void*) > 8) ? sizeof(void*) : 8;
+  const int align = (sizeof(void*) > 8) ? sizeof(void*) : 8;// 判断一个指针需要多少字节? 从而在不同的机器上进行内存对齐
   static_assert((align & (align - 1)) == 0,
                 "Pointer size should be a power of 2");
   size_t current_mod = reinterpret_cast<uintptr_t>(alloc_ptr_) & (align - 1);

@@ -41,8 +41,10 @@ namespace leveldb {
 const int kNumNonTableCacheFiles = 10;
 
 // Information kept for every waiting writer
+// struct 的默认是public, class的成员默认是 private
+// 我清楚了, 就是说 加了 explicit 为了防止创建的时候调用  write 方法 是传递的参数 被转换成 port::Mutex* , 防止出现debug的困难
 struct DBImpl::Writer {
-  //explicit: 用来防止隐式转换s
+  //explicit: 用来防止隐式转换
   explicit Writer(port::Mutex* mu)
       : batch(nullptr), sync(false), done(false), cv(mu) {}
 
@@ -290,7 +292,7 @@ void DBImpl::RemoveObsoleteFiles() {
   }
   mutex_.Lock();
 }
-
+// 恢复数据库
 Status DBImpl::Recover(VersionEdit* edit, bool* save_manifest) {
   mutex_.AssertHeld();
 
@@ -1119,22 +1121,25 @@ int64_t DBImpl::TEST_MaxNextLevelOverlappingBytes() {
   return versions_->MaxNextLevelOverlappingBytes();
 }
 
+// 这里是 Get方法
 Status DBImpl::Get(const ReadOptions& options, const Slice& key,
                    std::string* value) {
   Status s;
   MutexLock l(&mutex_);
-  SequenceNumber snapshot;
+  SequenceNumber snapshot;// 对应的快照
   if (options.snapshot != nullptr) {
     snapshot =
-        static_cast<const SnapshotImpl*>(options.snapshot)->sequence_number();
+        static_cast<const SnapshotImpl*>(options.snapshot)->sequence_number();// 隐式转换
   } else {
     snapshot = versions_->LastSequence();
   }
-
+  // 主要有两种 memtable
   MemTable* mem = mem_;
   MemTable* imm = imm_;
+  // 主要有两种 memtable
   Version* current = versions_->current();
-  mem->Ref();
+  mem->Ref();// 增加引用
+  // 
   if (imm != nullptr) imm->Ref();
   current->Ref();
 
@@ -1158,11 +1163,11 @@ Status DBImpl::Get(const ReadOptions& options, const Slice& key,
   }
 
   if (have_stat_update && current->UpdateStats(stats)) {
-    MaybeScheduleCompaction();
+    MaybeScheduleCompaction(); // 压缩层级的方法 主要是为了提升读取的性能
   }
   mem->Unref();
   if (imm != nullptr) imm->Unref();
-  current->Unref();
+  current->Unref();// 减少一个引用数量
   return s;
 }
 
@@ -1203,14 +1208,32 @@ Status DBImpl::Put(const WriteOptions& o, const Slice& key, const Slice& val) {
 Status DBImpl::Delete(const WriteOptions& options, const Slice& key) {
   return DB::Delete(options, key);
 }
-
+// 没有
 Status DBImpl::Write(const WriteOptions& options, WriteBatch* updates) {
   Writer w(&mutex_);
   w.batch = updates;
   w.sync = options.sync;
   w.done = false;
 
+//-------------------------------------------------------
+// 多线程环境管理写操作队列, 并确保写操作的按顺序执行
+// 代码逻辑
+// 加锁：
+
+// 通过 MutexLock l(&mutex_); 加锁，确保临界区的互斥访问。
+// 加入队列：
+
+// 将当前写操作 w 的指针添加到 writers_ 队列的末尾。
+// 等待条件：
+
+// 进入一个循环，等待当前写操作 w 变为队列的前端，或者 w.done 变为 true。
+// 如果 w 不是队列的前端且未完成，调用 w.cv.Wait() 使当前线程进入等待状态。
+// 检查完成状态：
+
+// 如果 w.done 为 true，返回 w.status。
+
   MutexLock l(&mutex_);
+//
   writers_.push_back(&w);
   while (!w.done && &w != writers_.front()) {
     w.cv.Wait();
@@ -1218,6 +1241,7 @@ Status DBImpl::Write(const WriteOptions& options, WriteBatch* updates) {
   if (w.done) {
     return w.status;
   }
+//-------------------------------------------------------
 
   // May temporarily unlock and wait.
   Status status = MakeRoomForWrite(updates == nullptr);
@@ -1329,6 +1353,7 @@ WriteBatch* DBImpl::BuildBatchGroup(Writer** last_writer) {
 
 // REQUIRES: mutex_ is held
 // REQUIRES: this thread is currently at the front of the writer queue
+// 
 Status DBImpl::MakeRoomForWrite(bool force) {
   mutex_.AssertHeld();
   assert(!writers_.empty());

@@ -14,7 +14,18 @@
 // policy is provided.  Clients may use their own implementations if
 // they want something more sophisticated (like scan-resistance, a
 // custom eviction policy, variable cache sizing, etc.)
+/**
+ * 这段代码提供了一个灵活的缓存接口，支持以下操作：
 
+插入 (Insert) 和查找 (Lookup) 缓存条目。
+自动淘汰（基于插入时的容量charge）。
+删除 (Erase) 和手动清理未使用的条目 (Prune)。
+多客户端分区支持 (NewId)。
+支持自定义的条目清理逻辑 (deleter)。
+提供一个内置的LRU缓存实现 (NewLRUCache)。
+
+//这个类定义了一个名为 Cache 的接口，用于管理键值对的缓存，提供了插入、查找、释放、删除键值对，生成新的 ID，修剪缓存，以及获取总费用等功能。
+ */
 #ifndef STORAGE_LEVELDB_INCLUDE_CACHE_H_
 #define STORAGE_LEVELDB_INCLUDE_CACHE_H_
 

@@ -18,6 +18,12 @@ class InternalKeyComparator;
 class MemTableIterator;
 
 class MemTable {
+  // 总结下, 就是对外主要暴露 三个方法
+  /**
+   * 1. Add
+   * 2. Get
+   * 3. ApproximateMemoryUsage = 获取内存的估计值
+   */
  public: // public 方法
   // MemTables are reference counted.  The initial reference count
   // is zero and the caller must call Ref() at least once.
@@ -41,7 +47,7 @@ class MemTable {
 
   // Returns an estimate of the number of bytes of data in use by this
   // data structure. It is safe to call when MemTable is being modified.
-  size_t ApproximateMemoryUsage(); // 获得内存使用的估计数值
+  size_t ApproximateMemoryUsage(); 
 
   // Return an iterator that yields the contents of the memtable.
   //
@@ -49,8 +55,10 @@ class MemTable {
   // while the returned iterator is live.  The keys returned by this
   // iterator are internal keys encoded by AppendInternalKey in the
   // db/format.{h,cc} module.
+  // 使用迭代器 做内存结构
   Iterator* NewIterator();
 
+  //  使用 Add 和Get 方法 来进行存取
   // Add an entry into memtable that maps key to value at the
   // specified sequence number and with the specified type.
   // Typically value will be empty if type==kTypeDeletion.
@@ -66,14 +74,15 @@ class MemTable {
  private:
   friend class MemTableIterator; // 如果类A是类B的友元, 本质上就是 类B 获得类A得所有访问权限 
   friend class MemTableBackwardIterator;
-
+  // 加上const的核心作用是提供 只读保护 todo 这个保护是怎么实现的?
+  // 这里的KeyComparator 提供的知识一层抽象
   struct KeyComparator {
     const InternalKeyComparator comparator;
     explicit KeyComparator(const InternalKeyComparator& c) : comparator(c) {}
     int operator()(const char* a, const char* b) const;
   };
 
-  typedef SkipList<const char*, KeyComparator> Table;
+  typedef SkipList<const char*, KeyComparator> Table; // 在内存中 使用跳表的数据结构 对memtable进行优化
 
   ~MemTable();  // 1. ~表示析构函数, 销毁函数 默认是public, 但是现在定义成prive, 表示 Private since only Unref() should be used to delete it
 

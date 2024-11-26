@@ -51,7 +51,7 @@ extern "C" {
 #endif
 
 /* Exported types */
-
+// LevelDB的C语言API接口，用于提供一个跨语言的接口，以便程序能够与LevelDB数据库进行交互。
 typedef struct leveldb_t leveldb_t;
 typedef struct leveldb_cache_t leveldb_cache_t;
 typedef struct leveldb_comparator_t leveldb_comparator_t;

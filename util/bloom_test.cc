@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "gtest/gtest.h"
+#include "gtest/gtest.h" // 使用google test
 #include "leveldb/filter_policy.h"
 #include "util/coding.h"
 #include "util/logging.h"
@@ -10,20 +10,20 @@
 
 namespace leveldb {
 
-static const int kVerbose = 1;
+static const int kVerbose = 1;// 用于控制输出的详细程度
 
 static Slice Key(int i, char* buffer) {
-  EncodeFixed32(buffer, i);
-  return Slice(buffer, sizeof(uint32_t));
+  EncodeFixed32(buffer, i);// 将整数 i 编码成 32位 固定长度的字节序列
+  return Slice(buffer, sizeof(uint32_t));// 这里的Slice表示: lice 类：表示一段连续的内存区域，通常用于处理字符串或其他二进制数据。
 }
 
-class BloomTest : public testing::Test {
+class BloomTest : public testing::Test {// BloomTest 继承自 test::Test
  public:
-  BloomTest() : policy_(NewBloomFilterPolicy(10)) {}
+  BloomTest() : policy_(NewBloomFilterPolicy(10)) {}// 创建一个过滤器策略, 10表示每个键使用的位数
 
-  ~BloomTest() { delete policy_; }
+  ~BloomTest() { delete policy_; }// 析构函数中, 会把对应的变量删除掉
 
-  void Reset() {
+  void Reset() { // 重置 会把 keys 和filter 这两个变量 清空
     keys_.clear();
     filter_.clear();
   }

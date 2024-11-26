@@ -17,11 +17,7 @@ class Env;
 class FilterPolicy;
 class Logger;
 class Snapshot;
-
-// DB contents are stored in a set of blocks, each of which holds a
-// sequence of key,value pairs.  Each block may be compressed before
-// being stored in a file.  The following enum describes which
-// compression method (if any) is used to compress a block.
+// 这段代码来自 LevelDB，并定义了数据库操作的 选项（Options） 结构体。这些选项控制数据库在不同操作中的行为，影响其性能、数据压缩、缓存等方面。
 enum CompressionType {
   // NOTE: do not change the values of existing entries, as these are
   // part of the persistent format on disk.

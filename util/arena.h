@@ -12,7 +12,9 @@
 #include <vector>
 
 namespace leveldb {
-
+/**
+ * 主要用来分配内存
+ */
 class Arena {
  public:
   Arena();
@@ -42,16 +44,19 @@ class Arena {
   char* alloc_ptr_;
   size_t alloc_bytes_remaining_;
 
-  // Array of new[] allocated memory blocks
+  // 用于保存当前的 所有的内存块
   std::vector<char*> blocks_;
 
   // Total memory usage of the arena.
   //
   // TODO(costan): This member is accessed via atomics, but the others are
   //               accessed without any locking. Is this OK?
+  // 记录当前的内存使用量
+  // atomic:表示原子操作
+  // size_t: 系统指针
   std::atomic<size_t> memory_usage_;
 };
-
+// 使用内联防止内存展开, 主要的作用是降低内存开销
 inline char* Arena::Allocate(size_t bytes) {
   // The semantics of what to return are a bit messy if we allow
   // 0-byte allocations, so we disallow them here (we don't need

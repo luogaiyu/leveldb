@@ -26,9 +26,36 @@ class WriteBatch;
 // Abstract handle to particular state of a DB.
 // A Snapshot is an immutable object and can therefore be safely
 // accessed from multiple threads without any external synchronization.
+// 这段代码是 LevelDB 的核心数据库接口定义，是 C++ 的头文件，提供了操作 LevelDB 的功能接口。
+// 2. 核心类与结构的重点
+// 2.1 DB 类
+// DB 是核心接口，定义了数据库的基本操作功能：
+
+// 静态方法 Open：
+
+// 用于打开数据库。返回一个 DB 实例。
+// 如果打开失败，返回错误状态，且会设置 *dbptr 为 nullptr。
+// 数据操作方法：
+
+// Put：插入或更新键值对。
+// Delete：删除指定键。
+// Get：读取指定键的值。
+// Write：应用批量写入操作。
+// 迭代器与范围操作：
+
+// NewIterator：生成一个迭代器，用于遍历数据库内容。
+// GetApproximateSizes：计算指定键范围的空间占用。
+// 高级功能：
+
+// 快照：
+// GetSnapshot 和 ReleaseSnapshot 提供对数据库状态的快照操作，快照是只读的，且线程安全。
+// 压缩：
+// CompactRange 对指定范围的数据进行压缩，删除过期和重复数据，优化存储。
+// 属性查询：
+// GetProperty 返回数据库状态的某些内部属性（如统计信息、内存使用量）。
 class LEVELDB_EXPORT Snapshot {
  protected:
-  virtual ~Snapshot();
+  virtual ~Snapshot(); // 能够实现多态
 };
 
 // A range of keys

@@ -50,7 +50,7 @@ class CondVar;
 // Thinly wraps std::mutex.
 class LOCKABLE Mutex {
  public:
-  Mutex() = default;
+  Mutex() = default;// 默认的函数
   ~Mutex() = default;
 
   Mutex(const Mutex&) = delete;
