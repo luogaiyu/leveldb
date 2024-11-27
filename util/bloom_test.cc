@@ -28,18 +28,18 @@ class BloomTest : public testing::Test {// BloomTest 继承自 test::Test
     filter_.clear();
   }
 
-  void Add(const Slice& s) { keys_.push_back(s.ToString()); }
+  void Add(const Slice& s) { keys_.push_back(s.ToString()); }// 添加一个键到keys
 
-  void Build() {
+  void Build() {// 构建bloom 过滤器 
     std::vector<Slice> key_slices;
     for (size_t i = 0; i < keys_.size(); i++) {
       key_slices.push_back(Slice(keys_[i]));
     }
     filter_.clear();
     policy_->CreateFilter(&key_slices[0], static_cast<int>(key_slices.size()),
-                          &filter_);
-    keys_.clear();
-    if (kVerbose >= 2) DumpFilter();
+                          &filter_);// 构建当前的bloom过滤器
+    keys_.clear();// 清楚key
+    if (kVerbose >= 2) DumpFilter(); //  输出一些信息,打印过滤器
   }
 
   size_t FilterSize() const { return filter_.size(); }
@@ -59,7 +59,7 @@ class BloomTest : public testing::Test {// BloomTest 继承自 test::Test
     if (!keys_.empty()) {
       Build();
     }
-    return policy_->KeyMayMatch(s, filter_);
+    return policy_->KeyMayMatch(s, filter_);// 检查当前的key 是否匹配
   }
 
   double FalsePositiveRate() {

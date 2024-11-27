@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
+// 引入所需的头文件, 包括LevelDB 的缓存模块
 #include "leveldb/cache.h"
 
 #include <cassert>
@@ -13,9 +14,9 @@
 #include "util/hash.h"
 #include "util/mutexlock.h"
 
-namespace leveldb {
+namespace leveldb {// 定义命名空间
 
-Cache::~Cache() {}
+Cache::~Cache() {}// 确保派生类的析构函数
 
 namespace {
 
@@ -61,6 +62,7 @@ struct LRUHandle {
     return Slice(key_data, key_length);
   }
 };
+//定义一个结构体 LRUHandle 用于表示缓存中的项, 每个项 包括值 删除器
 
 // We provide our own simple hash table since it removes a whole bunch
 // of porting hacks and is also faster than some of the built-in hash
@@ -146,6 +148,7 @@ class HandleTable {
     length_ = new_length;
   }
 };
+// 实现hash表
 
 // A single shard of sharded cache.
 class LRUCache {
@@ -194,6 +197,7 @@ class LRUCache {
 
   HandleTable table_ GUARDED_BY(mutex_);
 };
+//定义了一个类 LRUCache，实现了 LRU 缓存。包含插入、查找、释放、删除、修剪和获取总权重的方法。
 
 LRUCache::LRUCache() : capacity_(0), usage_(0) {
   // Make empty circular linked lists.
@@ -202,6 +206,8 @@ LRUCache::LRUCache() : capacity_(0), usage_(0) {
   in_use_.next = &in_use_;
   in_use_.prev = &in_use_;
 }
+// 构造函数初始化缓存，析构函数确保释放所有未释放的项。
+
 
 LRUCache::~LRUCache() {
   assert(in_use_.next == &in_use_);  // Error if caller has an unreleased handle
@@ -393,6 +399,7 @@ class ShardedLRUCache : public Cache {
     return total;
   }
 };
+//定义了一个函数 NewLRUCache，用于创建一个新的 ShardedLRUCache 实例。
 
 }  // end anonymous namespace
 

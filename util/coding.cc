@@ -6,19 +6,19 @@
 
 namespace leveldb {
 
-void PutFixed32(std::string* dst, uint32_t value) {
+void PutFixed32(std::string* dst, uint32_t value) {// 函数将 32 位整数编码为固定长度的字节序列
   char buf[sizeof(value)];
   EncodeFixed32(buf, value);
   dst->append(buf, sizeof(buf));
 }
 
-void PutFixed64(std::string* dst, uint64_t value) {
+void PutFixed64(std::string* dst, uint64_t value) {//PutFixed64 函数将 64 位整数编码为固定长度的字节序列
   char buf[sizeof(value)];
   EncodeFixed64(buf, value);
   dst->append(buf, sizeof(buf));
 }
 
-char* EncodeVarint32(char* dst, uint32_t v) {
+char* EncodeVarint32(char* dst, uint32_t v) {//EncodeVarint32 函数将 32 位整数编码为可变长度的字节序列
   // Operate on characters as unsigneds
   uint8_t* ptr = reinterpret_cast<uint8_t*>(dst);
   static const int B = 128;
@@ -46,13 +46,13 @@ char* EncodeVarint32(char* dst, uint32_t v) {
   return reinterpret_cast<char*>(ptr);
 }
 
-void PutVarint32(std::string* dst, uint32_t v) {
+void PutVarint32(std::string* dst, uint32_t v) {//PutVarint32 函数将 32 位整数编码为可变长度的字节序列
   char buf[5];
   char* ptr = EncodeVarint32(buf, v);
   dst->append(buf, ptr - buf);
 }
 
-char* EncodeVarint64(char* dst, uint64_t v) {
+char* EncodeVarint64(char* dst, uint64_t v) {//EncodeVarint64 函数将 64 位整数编码为可变长度的字节序列
   static const int B = 128;
   uint8_t* ptr = reinterpret_cast<uint8_t*>(dst);
   while (v >= B) {
@@ -63,13 +63,13 @@ char* EncodeVarint64(char* dst, uint64_t v) {
   return reinterpret_cast<char*>(ptr);
 }
 
-void PutVarint64(std::string* dst, uint64_t v) {
+void PutVarint64(std::string* dst, uint64_t v) {//PutVarint64 函数将 64 位整数编码为可变长度的字节序列
   char buf[10];
   char* ptr = EncodeVarint64(buf, v);
   dst->append(buf, ptr - buf);
 }
 
-void PutLengthPrefixedSlice(std::string* dst, const Slice& value) {
+void PutLengthPrefixedSlice(std::string* dst, const Slice& value) {//PutLengthPrefixedSlice 函数将 Slice 的长度和内容编码为长度前缀的字节序列，并将其追加到 std::string 中
   PutVarint32(dst, value.size());
   dst->append(value.data(), value.size());
 }

@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
+// 引入 依赖
 #include "util/coding.h"
 
 #include <vector>
@@ -9,7 +10,7 @@
 #include "gtest/gtest.h"
 
 namespace leveldb {
-
+// 定义测试用例: Fixed32 测试 编解码方法
 TEST(Coding, Fixed32) {
   std::string s;
   for (uint32_t v = 0; v < 100000; v++) {
@@ -23,7 +24,7 @@ TEST(Coding, Fixed32) {
     p += sizeof(uint32_t);
   }
 }
-
+// 
 TEST(Coding, Fixed64) {
   std::string s;
   for (int power = 0; power <= 63; power++) {
@@ -50,7 +51,7 @@ TEST(Coding, Fixed64) {
     p += sizeof(uint64_t);
   }
 }
-
+// 测试小端编码
 // Test that encoding routines generate little-endian encodings
 TEST(Coding, EncodingOutput) {
   std::string dst;
@@ -156,7 +157,7 @@ TEST(Coding, Varint64Overflow) {
   ASSERT_TRUE(GetVarint64Ptr(input.data(), input.data() + input.size(),
                              &result) == nullptr);
 }
-
+// 测试 GetVarint64Ptr 方法处理截断的情况。
 TEST(Coding, Varint64Truncation) {
   uint64_t large_value = (1ull << 63) + 100ull;
   std::string s;

@@ -2,32 +2,32 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
+// 引入一些依赖
 #include "leveldb/filter_policy.h"
-
 #include "leveldb/slice.h"
 #include "util/hash.h"
-
+// 创建leveldb的组织空间
 namespace leveldb {
-
+//  创建匿名空间
 namespace {
-static uint32_t BloomHash(const Slice& key) {
+static uint32_t BloomHash(const Slice& key) { // 定义了静态函数 BloomHash 使用 Hash生成 一个32位的hash值
   return Hash(key.data(), key.size(), 0xbc9f1d34);
 }
 
 class BloomFilterPolicy : public FilterPolicy {
  public:
-  explicit BloomFilterPolicy(int bits_per_key) : bits_per_key_(bits_per_key) {
+  explicit BloomFilterPolicy(int bits_per_key) : bits_per_key_(bits_per_key) {// 接受参数 bits_per_key, 表示每个键的位数
     // We intentionally round down to reduce probing cost a little bit
-    k_ = static_cast<size_t>(bits_per_key * 0.69);  // 0.69 =~ ln(2)
+    k_ = static_cast<size_t>(bits_per_key * 0.69);  // 0.69 =~ ln(2) k_ 用于控制hash函数的探针次数
     if (k_ < 1) k_ = 1;
     if (k_ > 30) k_ = 30;
   }
 
-  const char* Name() const override { return "leveldb.BuiltinBloomFilter2"; }
+  const char* Name() const override { return "leveldb.BuiltinBloomFilter2"; }// 返回 过滤器策略的名称
 
-  void CreateFilter(const Slice* keys, int n, std::string* dst) const override {
+  void CreateFilter(const Slice* keys, int n, std::string* dst) const override {// 创建bloom过滤器
     // Compute bloom filter size (in both bits and bytes)
-    size_t bits = n * bits_per_key_;
+    size_t bits = n * bits_per_key_; // 计算bloom 过滤器的位数
 
     // For small n, we can see a very high false positive rate.  Fix it
     // by enforcing a minimum bloom filter length.
@@ -48,12 +48,12 @@ class BloomFilterPolicy : public FilterPolicy {
       for (size_t j = 0; j < k_; j++) {
         const uint32_t bitpos = h % bits;
         array[bitpos / 8] |= (1 << (bitpos % 8));
-        h += delta;
+        h += delta;// 遍历所有的键, 使用双重hash 生成一系列hash值, 在过滤器的相应位置设置位
       }
     }
   }
 
-  bool KeyMayMatch(const Slice& key, const Slice& bloom_filter) const override {
+  bool KeyMayMatch(const Slice& key, const Slice& bloom_filter) const override {// 检查当前的key 是否匹配
     const size_t len = bloom_filter.size();
     if (len < 2) return false;
 
@@ -66,7 +66,7 @@ class BloomFilterPolicy : public FilterPolicy {
     if (k > 30) {
       // Reserved for potentially new encodings for short bloom filters.
       // Consider it a match.
-      return true;
+      return true;// 
     }
 
     uint32_t h = BloomHash(key);
@@ -83,9 +83,10 @@ class BloomFilterPolicy : public FilterPolicy {
   size_t bits_per_key_;
   size_t k_;
 };
+// 添加一些 key 和k_
 }  // namespace
 
-const FilterPolicy* NewBloomFilterPolicy(int bits_per_key) {
+const FilterPolicy* NewBloomFilterPolicy(int bits_per_key) { // 用于创建一个新的 BloomFilterPolicy 例子
   return new BloomFilterPolicy(bits_per_key);
 }
 
