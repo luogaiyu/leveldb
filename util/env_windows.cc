@@ -37,15 +37,15 @@ namespace leveldb {
 
 namespace {
 
-constexpr const size_t kWritableFileBufferSize = 65536;
+constexpr const size_t kWritableFileBufferSize = 65536;// 可写文件缓冲区的大小
 
 // Up to 1000 mmaps for 64-bit binaries; none for 32-bit.
-constexpr int kDefaultMmapLimit = (sizeof(void*) >= 8) ? 1000 : 0;
+constexpr int kDefaultMmapLimit = (sizeof(void*) >= 8) ? 1000 : 0;// 内存映射文件数量限制
 
 // Can be set by by EnvWindowsTestHelper::SetReadOnlyMMapLimit().
-int g_mmap_limit = kDefaultMmapLimit;
+int g_mmap_limit = kDefaultMmapLimit;// 存储当前的内存映射文件数量限制
 
-std::string GetWindowsErrorMessage(DWORD error_code) {
+std::string GetWindowsErrorMessage(DWORD error_code) {// 用于获取 Windows 错误代码对应的错误信息
   std::string message;
   char* error_text = nullptr;
   // Use MBCS version of FormatMessage to match return value.
@@ -62,13 +62,13 @@ std::string GetWindowsErrorMessage(DWORD error_code) {
   return message;
 }
 
-Status WindowsError(const std::string& context, DWORD error_code) {
+Status WindowsError(const std::string& context, DWORD error_code) {// 用于生成带有上下文和错误信息的 Status 对象。
   if (error_code == ERROR_FILE_NOT_FOUND || error_code == ERROR_PATH_NOT_FOUND)
     return Status::NotFound(context, GetWindowsErrorMessage(error_code));
   return Status::IOError(context, GetWindowsErrorMessage(error_code));
 }
 
-class ScopedHandle {
+class ScopedHandle {// 资源限制类, 用于管理Windows文件句柄, 确保对象销毁时自动关闭句柄
  public:
   ScopedHandle(HANDLE handle) : handle_(handle) {}
   ScopedHandle(const ScopedHandle&) = delete;
@@ -111,7 +111,7 @@ class ScopedHandle {
 // Currently used to limit read-only file descriptors and mmap file usage
 // so that we do not run out of file descriptors or virtual memory, or run into
 // kernel performance problems for very large databases.
-class Limiter {
+class Limiter {// 用于限制资源的使用数量, 通过原子操作管理可用资源的数量
  public:
   // Limit maximum number of resources to |max_acquires|.
   Limiter(int max_acquires)
@@ -163,7 +163,7 @@ class Limiter {
   std::atomic<int> acquires_allowed_;
 };
 
-class WindowsSequentialFile : public SequentialFile {
+class WindowsSequentialFile : public SequentialFile {// 实现 SequentialFile 接口，用于顺序读取文件内容
  public:
   WindowsSequentialFile(std::string filename, ScopedHandle handle)
       : handle_(std::move(handle)), filename_(std::move(filename)) {}
@@ -198,7 +198,7 @@ class WindowsSequentialFile : public SequentialFile {
   const std::string filename_;
 };
 
-class WindowsRandomAccessFile : public RandomAccessFile {
+class WindowsRandomAccessFile : public RandomAccessFile {// 实现 RandomAccessFile 接口，用于任意读取文件内容
  public:
   WindowsRandomAccessFile(std::string filename, ScopedHandle handle)
       : handle_(std::move(handle)), filename_(std::move(filename)) {}
@@ -230,7 +230,7 @@ class WindowsRandomAccessFile : public RandomAccessFile {
   const std::string filename_;
 };
 
-class WindowsMmapReadableFile : public RandomAccessFile {
+class WindowsMmapReadableFile : public RandomAccessFile {// 实现 RandomAccessFile 接口，用于通过内存映射读取文件内容
  public:
   // base[0,length-1] contains the mmapped contents of the file.
   WindowsMmapReadableFile(std::string filename, char* mmap_base, size_t length,
@@ -263,7 +263,7 @@ class WindowsMmapReadableFile : public RandomAccessFile {
   const std::string filename_;
 };
 
-class WindowsWritableFile : public WritableFile {
+class WindowsWritableFile : public WritableFile {// 实现 WritableFile 接口，用于写入文件内容
  public:
   WindowsWritableFile(std::string filename, ScopedHandle handle)
       : pos_(0), handle_(std::move(handle)), filename_(std::move(filename)) {}
@@ -353,7 +353,7 @@ class WindowsWritableFile : public WritableFile {
 // Lock or unlock the entire file as specified by |lock|. Returns true
 // when successful, false upon failure. Caller should call ::GetLastError()
 // to determine cause of failure
-bool LockOrUnlock(HANDLE handle, bool lock) {
+bool LockOrUnlock(HANDLE handle, bool lock) { // 用于锁定或解锁文件 
   if (lock) {
     return ::LockFile(handle,
                       /*dwFileOffsetLow=*/0, /*dwFileOffsetHigh=*/0,
@@ -367,7 +367,7 @@ bool LockOrUnlock(HANDLE handle, bool lock) {
   }
 }
 
-class WindowsFileLock : public FileLock {
+class WindowsFileLock : public FileLock {// 实现 FileLock 接口，用于管理文件锁
  public:
   WindowsFileLock(ScopedHandle handle, std::string filename)
       : handle_(std::move(handle)), filename_(std::move(filename)) {}
@@ -380,7 +380,7 @@ class WindowsFileLock : public FileLock {
   const std::string filename_;
 };
 
-class WindowsEnv : public Env {
+class WindowsEnv : public Env {// 实现 Env 接口，提供文件操作、目录操作、文件锁定、后台任务调度等功能
  public:
   WindowsEnv();
   ~WindowsEnv() override {
@@ -613,7 +613,7 @@ class WindowsEnv : public Env {
   }
 
   void Schedule(void (*background_work_function)(void* background_work_arg),
-                void* background_work_arg) override;
+                void* background_work_arg) override;// 调度后台任务
 
   void StartThread(void (*thread_main)(void* thread_main_arg),
                    void* thread_main_arg) override {
@@ -670,7 +670,7 @@ class WindowsEnv : public Env {
   }
 
  private:
-  void BackgroundThreadMain();
+  void BackgroundThreadMain();//  处理后台任务队列的任务
 
   static void BackgroundThreadEntryPoint(WindowsEnv* env) {
     env->BackgroundThreadMain();
@@ -701,9 +701,9 @@ class WindowsEnv : public Env {
 };
 
 // Return the maximum number of concurrent mmaps.
-int MaxMmaps() { return g_mmap_limit; }
+int MaxMmaps() { return g_mmap_limit; }// 返回当前的内存映射文件数量限制
 
-WindowsEnv::WindowsEnv()
+WindowsEnv::WindowsEnv() 
     : background_work_cv_(&background_work_mutex_),
       started_background_thread_(false),
       mmap_limiter_(MaxMmaps()) {}
@@ -761,7 +761,7 @@ void WindowsEnv::BackgroundThreadMain() {
 //     return default_env.env();
 //   }
 template <typename EnvType>
-class SingletonEnv {
+class SingletonEnv {// 用于管理 WindowsEnv的单例模式
  public:
   SingletonEnv() {
 #if !defined(NDEBUG)

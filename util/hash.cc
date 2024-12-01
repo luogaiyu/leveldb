@@ -19,7 +19,7 @@
 
 namespace leveldb {
 
-uint32_t Hash(const char* data, size_t n, uint32_t seed) {
+uint32_t Hash(const char* data, size_t n, uint32_t seed) {// 实现hash方法
   // Similar to murmur hash
   const uint32_t m = 0xc6a4a793;
   const uint32_t r = 24;

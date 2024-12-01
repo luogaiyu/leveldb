@@ -8,11 +8,11 @@
 #include "util/env_windows_test_helper.h"
 #include "util/testutil.h"
 
-namespace leveldb {
+namespace leveldb {// levelDB 命名空间
 
-static const int kMMapLimit = 4;
+static const int kMMapLimit = 4; // 表示
 
-class EnvWindowsTest : public testing::Test {
+class EnvWindowsTest : public testing::Test {// EnvWindowsTest 初始化 env
  public:
   static void SetFileLimits(int mmap_limit) {
     EnvWindowsTestHelper::SetReadOnlyMMapLimit(mmap_limit);
@@ -57,7 +57,7 @@ TEST_F(EnvWindowsTest, TestOpenOnRead) {
 
 }  // namespace leveldb
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv) {//设置测试文件的内存映射限制 初始化, 测试当前的windows环境中的
   // All tests currently run with the same read-only file limits.
   leveldb::EnvWindowsTest::SetFileLimits(leveldb::kMMapLimit);
   testing::InitGoogleTest(&argc, argv);

@@ -13,15 +13,16 @@
 #endif
 
 namespace leveldb {
-
+// 显性 声明 Env类的默认构造函数和析构函数
 Env::Env() = default;
 
 Env::~Env() = default;
 
-Status Env::NewAppendableFile(const std::string& fname, WritableFile** result) {
+Status Env::NewAppendableFile(const std::string& fname, WritableFile** result) {// 定义 NewAppendableFile 方法，默认实现为不支持该操作，返回 NotSupported 状态
   return Status::NotSupported("NewAppendableFile", fname);
 }
 
+//定义 RemoveDir 和 DeleteDir 方法，互相调用对方，确保一致性
 Status Env::RemoveDir(const std::string& dirname) { return DeleteDir(dirname); }
 Status Env::DeleteDir(const std::string& dirname) { return RemoveDir(dirname); }
 
@@ -38,7 +39,7 @@ Logger::~Logger() = default;
 
 FileLock::~FileLock() = default;
 
-void Log(Logger* info_log, const char* format, ...) {
+void Log(Logger* info_log, const char* format, ...) {// 定义 Log函数, 用于格式化 日志消息
   if (info_log != nullptr) {
     std::va_list ap;
     va_start(ap, format);
@@ -48,7 +49,7 @@ void Log(Logger* info_log, const char* format, ...) {
 }
 
 static Status DoWriteStringToFile(Env* env, const Slice& data,
-                                  const std::string& fname, bool should_sync) {
+                                  const std::string& fname, bool should_sync) {// 用于将字符串数据写入文件，并根据 should_sync 参数决定是否同步文件
   WritableFile* file;
   Status s = env->NewWritableFile(fname, &file);
   if (!s.ok()) {
@@ -69,16 +70,16 @@ static Status DoWriteStringToFile(Env* env, const Slice& data,
 }
 
 Status WriteStringToFile(Env* env, const Slice& data,
-                         const std::string& fname) {
+                         const std::string& fname) {// 调用 DoWriteStringToFile 并设置 should_sync 为 false，即不同步文件
   return DoWriteStringToFile(env, data, fname, false);
 }
 
 Status WriteStringToFileSync(Env* env, const Slice& data,
-                             const std::string& fname) {
+                             const std::string& fname) {// 调用 DoWriteStringToFile 并设置 should_sync 为 true，即同步文件
   return DoWriteStringToFile(env, data, fname, true);
 }
 
-Status ReadFileToString(Env* env, const std::string& fname, std::string* data) {
+Status ReadFileToString(Env* env, const std::string& fname, std::string* data) {// 用于将文件内容读取到字符串中。使用缓冲区逐块读取文件内容，并将其追加到 data 字符串中
   data->clear();
   SequentialFile* file;
   Status s = env->NewSequentialFile(fname, &file);
@@ -103,6 +104,8 @@ Status ReadFileToString(Env* env, const std::string& fname, std::string* data) {
   return s;
 }
 
-EnvWrapper::~EnvWrapper() {}
+EnvWrapper::~EnvWrapper() {}// 定义 EnvWrapper 类的虚析构函数，确保派生类的析构函数能够正确调用。
+
+
 
 }  // namespace leveldb

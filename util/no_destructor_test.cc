@@ -14,7 +14,7 @@ namespace leveldb {
 
 namespace {
 
-struct DoNotDestruct {
+struct DoNotDestruct {// 用于测试 NoDestructor类
  public:
   DoNotDestruct(uint32_t a, uint64_t b) : a(a), b(b) {}
   ~DoNotDestruct() { std::abort(); }

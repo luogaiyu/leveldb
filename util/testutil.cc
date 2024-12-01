@@ -11,7 +11,7 @@
 namespace leveldb {
 namespace test {
 
-Slice RandomString(Random* rnd, int len, std::string* dst) {
+Slice RandomString(Random* rnd, int len, std::string* dst) {// 随机生成字符串
   dst->resize(len);
   for (int i = 0; i < len; i++) {
     (*dst)[i] = static_cast<char>(' ' + rnd->Uniform(95));  // ' ' .. '~'
@@ -19,7 +19,7 @@ Slice RandomString(Random* rnd, int len, std::string* dst) {
   return Slice(*dst);
 }
 
-std::string RandomKey(Random* rnd, int len) {
+std::string RandomKey(Random* rnd, int len) { //生成一个指定长度的随机键
   // Make sure to generate a wide variety of characters so we
   // test the boundary conditions for short-key optimizations.
   static const char kTestChars[] = {'\0', '\1', 'a',    'b',    'c',
@@ -32,7 +32,7 @@ std::string RandomKey(Random* rnd, int len) {
 }
 
 Slice CompressibleString(Random* rnd, double compressed_fraction, size_t len,
-                         std::string* dst) {
+                         std::string* dst) {// 生成一个可压缩的字符串，通过重复原始数据来实现压缩效果
   int raw = static_cast<int>(len * compressed_fraction);
   if (raw < 1) raw = 1;
   std::string raw_data;

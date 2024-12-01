@@ -17,8 +17,17 @@
 #include "leveldb/env.h"
 
 namespace leveldb {
+  /**
+   * 主要功能包括：
+获取当前时间。
+记录线程ID。
+使用栈缓冲区或动态分配的缓冲区格式化日志消息。
+处理日志消息的溢出情况。
+将日志消息写入文件并刷新缓冲区
+   * 
+   */
 
-class WindowsLogger final : public Logger {
+class WindowsLogger final : public Logger {// 定义 WindowsLogger 类，继承自 Logger 接口，并标记为 final 表示不允许进一步派生。
  public:
   // Creates a logger that writes to the given file.
   //

@@ -12,7 +12,7 @@
 #include "util/mutexlock.h"
 #include "util/testutil.h"
 
-namespace leveldb {
+namespace leveldb {// leveldb 的命名空间
 
 class EnvTest : public testing::Test {
  public:

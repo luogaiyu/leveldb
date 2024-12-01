@@ -12,7 +12,7 @@
 
 namespace leveldb {
 
-TEST(Logging, NumberToString) {
+TEST(Logging, NumberToString) {// 验证一些log 的打点函数
   ASSERT_EQ("0", NumberToString(0));
   ASSERT_EQ("1", NumberToString(1));
   ASSERT_EQ("9", NumberToString(9));

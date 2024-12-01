@@ -18,13 +18,14 @@
 #include "port/port.h"
 #include "util/env_posix_test_helper.h"
 #include "util/testutil.h"
-
+// 确保文件描述符在执行 exec 时不被继承到子进程中。
 #if HAVE_O_CLOEXEC
 
-namespace {
+namespace {// 匿名空间
 
 // Exit codes for the helper process spawned by TestCloseOnExec* tests.
 // Useful for debugging test failures.
+// 定义常量
 constexpr int kTextCloseOnExecHelperExecFailedCode = 61;
 constexpr int kTextCloseOnExecHelperDup2FailedCode = 62;
 constexpr int kTextCloseOnExecHelperFoundOpenFdCode = 63;
@@ -35,7 +36,7 @@ constexpr int kTextCloseOnExecHelperFoundOpenFdCode = 63;
 // std::string does not return a mutable pointer to its buffer until C++17.
 //
 // The vector stores the string pointed to by argv[0], plus the trailing null.
-std::vector<char>* GetArgvZero() {
+std::vector<char>* GetArgvZero() {// 用于保存程序的名称
   static std::vector<char> program_name;
   return &program_name;
 }
@@ -56,7 +57,7 @@ static const char kTestCloseOnExecSwitch[] = "--test-close-on-exec-helper";
 //
 // When main() delegates to this function, the process probes whether a given
 // file descriptor is open, and communicates the result via its exit code.
-int TestCloseOnExecHelperMain(char* pid_arg) {
+int TestCloseOnExecHelperMain(char* pid_arg) {//定义了一个辅助进程的主函数 TestCloseOnExecHelperMain，用于检查指定的文件描述符是否已关闭。如果文件描述符未关闭，则返回相应的错误码。
   int fd = std::atoi(pid_arg);
   // When given the same file descriptor twice, dup2() returns -1 if the
   // file descriptor is closed, or the given file descriptor if it is open.
@@ -76,7 +77,7 @@ int TestCloseOnExecHelperMain(char* pid_arg) {
 // File descriptors are small non-negative integers.
 //
 // Returns void so the implementation can use ASSERT_EQ.
-void GetMaxFileDescriptor(int* result_fd) {
+void GetMaxFileDescriptor(int* result_fd) {//获取最大文件描述符,用于获取系统允许的最大文件描述符数量。
   // Get the maximum file descriptor number.
   ::rlimit fd_rlimit;
   ASSERT_EQ(0, ::getrlimit(RLIMIT_NOFILE, &fd_rlimit));
@@ -86,7 +87,7 @@ void GetMaxFileDescriptor(int* result_fd) {
 // Iterates through all possible FDs and returns the currently open ones.
 //
 // Returns void so the implementation can use ASSERT_EQ.
-void GetOpenFileDescriptors(std::unordered_set<int>* open_fds) {
+void GetOpenFileDescriptors(std::unordered_set<int>* open_fds) {//获取当前打开的文件描述符
   int max_fd = 0;
   GetMaxFileDescriptor(&max_fd);
 
@@ -110,7 +111,7 @@ void GetOpenFileDescriptors(std::unordered_set<int>* open_fds) {
 // call. Assumes that exactly one FD was opened since that call.
 //
 // Returns void so the implementation can use ASSERT_EQ.
-void GetNewlyOpenedFileDescriptor(
+void GetNewlyOpenedFileDescriptor(//获取新打开的文件描述符
     const std::unordered_set<int>& baseline_open_fds, int* result_fd) {
   std::unordered_set<int> open_fds;
   GetOpenFileDescriptors(&open_fds);
@@ -125,7 +126,7 @@ void GetNewlyOpenedFileDescriptor(
 }
 
 // Check that a fork()+exec()-ed child process does not have an extra open FD.
-void CheckCloseOnExecDoesNotLeakFDs(
+void CheckCloseOnExecDoesNotLeakFDs(//检查文件描述符是否泄漏
     const std::unordered_set<int>& baseline_open_fds) {
   // Prepare the argument list for the child process.
   // execv() wants mutable buffers.
@@ -164,12 +165,12 @@ void CheckCloseOnExecDoesNotLeakFDs(
 
 #endif  // HAVE_O_CLOEXEC
 
-namespace leveldb {
+namespace leveldb {// 定义leveldb 空间
 
 static const int kReadOnlyFileLimit = 4;
 static const int kMMapLimit = 4;
 
-class EnvPosixTest : public testing::Test {
+class EnvPosixTest : public testing::Test {// 测试 posix 环境
  public:
   static void SetFileLimits(int read_only_file_limit, int mmap_limit) {
     EnvPosixTestHelper::SetReadOnlyFDLimit(read_only_file_limit);
@@ -181,7 +182,10 @@ class EnvPosixTest : public testing::Test {
   Env* env_;
 };
 
-TEST_F(EnvPosixTest, TestOpenOnRead) {
+TEST_F(EnvPosixTest, TestOpenOnRead) {//用于测试 RandomAccessFile 的 open-on-read 行为。创建一个测试文件，多次打开并读取内容，最后删除文件。
+/**
+ * POSIX（Portable Operating System Interface）不仅仅是一个文件系统，而是一整套操作系统接口和行为规范的标准。
+ */
   // Write some test data to a single file that will be opened |n| times.
   std::string test_dir;
   ASSERT_LEVELDB_OK(env_->GetTestDirectory(&test_dir));

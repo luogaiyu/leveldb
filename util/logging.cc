@@ -14,13 +14,13 @@
 
 namespace leveldb {
 
-void AppendNumberTo(std::string* str, uint64_t num) {
+void AppendNumberTo(std::string* str, uint64_t num) {//定义一个函数，将 uint64_t 类型的数字转换为字符串并追加到 str 中
   char buf[30];
   std::snprintf(buf, sizeof(buf), "%llu", static_cast<unsigned long long>(num));
   str->append(buf);
 }
 
-void AppendEscapedStringTo(std::string* str, const Slice& value) {
+void AppendEscapedStringTo(std::string* str, const Slice& value) {// 定义一个函数，将 Slice 中的字符串转义并追加到 str 中
   for (size_t i = 0; i < value.size(); i++) {
     char c = value[i];
     if (c >= ' ' && c <= '~') {
@@ -34,19 +34,19 @@ void AppendEscapedStringTo(std::string* str, const Slice& value) {
   }
 }
 
-std::string NumberToString(uint64_t num) {
+std::string NumberToString(uint64_t num) {// 定义一个函数，将 uint64_t 类型的数字转换为字符串
   std::string r;
   AppendNumberTo(&r, num);
   return r;
 }
 
-std::string EscapeString(const Slice& value) {
+std::string EscapeString(const Slice& value) {//定义一个函数，将 Slice 中的字符串转义为新的字符串
   std::string r;
   AppendEscapedStringTo(&r, value);
   return r;
 }
 
-bool ConsumeDecimalNumber(Slice* in, uint64_t* val) {
+bool ConsumeDecimalNumber(Slice* in, uint64_t* val) {// 定义一个函数，从 Slice 中解析十进制数字
   // Constants that will be optimized away.
   constexpr const uint64_t kMaxUint64 = std::numeric_limits<uint64_t>::max();
   constexpr const char kLastDigitOfMaxUint64 =

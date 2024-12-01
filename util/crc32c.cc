@@ -11,13 +11,14 @@
 
 #include "port/port.h"
 #include "util/coding.h"
+// 包括一些依赖
 
-namespace leveldb {
-namespace crc32c {
+namespace leveldb { // 创建命名空间 leveldb
+namespace crc32c { // 创建 crc32c 命名空间
 
 namespace {
 
-const uint32_t kByteExtensionTable[256] = {
+const uint32_t kByteExtensionTable[256] = {// 预计算的CRC32C
     0x00000000, 0xf26b8303, 0xe13b70f7, 0x1350f3f4, 0xc79a971f, 0x35f1141c,
     0x26a1e7e8, 0xd4ca64eb, 0x8ad958cf, 0x78b2dbcc, 0x6be22838, 0x9989ab3b,
     0x4d43cfd0, 0xbf284cd3, 0xac78bf27, 0x5e133c24, 0x105ec76f, 0xe235446c,
@@ -62,7 +63,7 @@ const uint32_t kByteExtensionTable[256] = {
     0xd5cf889d, 0x27a40b9e, 0x79b737ba, 0x8bdcb4b9, 0x988c474d, 0x6ae7c44e,
     0xbe2da0a5, 0x4c4623a6, 0x5f16d052, 0xad7d5351};
 
-const uint32_t kStrideExtensionTable0[256] = {
+const uint32_t kStrideExtensionTable0[256] = {// 辅助函数
     0x00000000, 0x30d23865, 0x61a470ca, 0x517648af, 0xc348e194, 0xf39ad9f1,
     0xa2ec915e, 0x923ea93b, 0x837db5d9, 0xb3af8dbc, 0xe2d9c513, 0xd20bfd76,
     0x4035544d, 0x70e76c28, 0x21912487, 0x11431ce2, 0x03171d43, 0x33c52526,
@@ -243,9 +244,12 @@ const uint32_t kStrideExtensionTable3[256] = {
     0x9c221d09, 0x6e2e10f7, 0x7dd67004, 0x8fda7dfa};
 
 // CRCs are pre- and post- conditioned by xoring with all ones.
+// 常量 用于定义一个
+// constexpr 表示该变量的值在编译时可以确定
 static constexpr const uint32_t kCRC32Xor = static_cast<uint32_t>(0xffffffffU);
 
 // Reads a little-endian 32-bit integer from a 32-bit-aligned buffer.
+// 定义内联函数, 从给定的缓冲区读取32位的小端整数
 inline uint32_t ReadUint32LE(const uint8_t* buffer) {
   return DecodeFixed32(reinterpret_cast<const char*>(buffer));
 }
@@ -253,7 +257,7 @@ inline uint32_t ReadUint32LE(const uint8_t* buffer) {
 // Returns the smallest address >= the given address that is aligned to N bytes.
 //
 // N must be a power of two.
-template <int N>
+template <int N> // 使用模版函数 返回 对应指针的N字节的地址
 constexpr inline const uint8_t* RoundUp(const uint8_t* pointer) {
   return reinterpret_cast<uint8_t*>(
       (reinterpret_cast<uintptr_t>(pointer) + (N - 1)) &
@@ -264,16 +268,17 @@ constexpr inline const uint8_t* RoundUp(const uint8_t* pointer) {
 
 // Determine if the CPU running this program can accelerate the CRC32C
 // calculation.
+// 检查硬件加速
 static bool CanAccelerateCRC32C() {
   // port::AcceleretedCRC32C returns zero when unable to accelerate.
   static const char kTestCRCBuffer[] = "TestCRCBuffer";
-  static const char kBufSize = sizeof(kTestCRCBuffer) - 1;
+  static const char kBufSize = sizeof(kTestCRCBuffer) - 1;// 测试缓冲区
   static const uint32_t kTestCRCValue = 0xdcbc59fa;
 
   return port::AcceleratedCRC32C(0, kTestCRCBuffer, kBufSize) == kTestCRCValue;
 }
 
-uint32_t Extend(uint32_t crc, const char* data, size_t n) {
+uint32_t Extend(uint32_t crc, const char* data, size_t n) {// 定义Extend 函数, 用于 CRC32C值
   static bool accelerate = CanAccelerateCRC32C();
   if (accelerate) {
     return port::AcceleratedCRC32C(crc, data, n);
@@ -291,6 +296,7 @@ uint32_t Extend(uint32_t crc, const char* data, size_t n) {
   } while (0)
 
 // Process one of the 4 strides of 4-byte data.
+// 定义很多的宏
 #define STEP4(s)                                                               \
   do {                                                                         \
     crc##s = ReadUint32LE(p + s * 4) ^ kStrideExtensionTable3[crc##s & 0xff] ^ \
@@ -378,3 +384,4 @@ uint32_t Extend(uint32_t crc, const char* data, size_t n) {
 
 }  // namespace crc32c
 }  // namespace leveldb
+// 结束命名空间

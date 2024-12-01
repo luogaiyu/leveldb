@@ -21,7 +21,7 @@
 
 namespace leveldb {
 
-class PosixLogger final : public Logger {
+class PosixLogger final : public Logger {// 创建了一个日志类
  public:
   // Creates a logger that writes to the given file.
   //
@@ -128,3 +128,4 @@ class PosixLogger final : public Logger {
 }  // namespace leveldb
 
 #endif  // STORAGE_LEVELDB_UTIL_POSIX_LOGGER_H_
+// 防止重复包含的宏定义

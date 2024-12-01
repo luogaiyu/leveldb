@@ -11,7 +11,7 @@
 
 namespace leveldb {
 
-TEST(Status, MoveConstructor) {
+TEST(Status, MoveConstructor) {// 成功状态的移动
   {
     Status ok = Status::OK();
     Status ok2 = std::move(ok);
@@ -19,7 +19,7 @@ TEST(Status, MoveConstructor) {
     ASSERT_TRUE(ok2.ok());
   }
 
-  {
+  {// 未找到错误状态的移动
     Status status = Status::NotFound("custom NotFound status message");
     Status status2 = std::move(status);
 
@@ -27,7 +27,7 @@ TEST(Status, MoveConstructor) {
     ASSERT_EQ("NotFound: custom NotFound status message", status2.ToString());
   }
 
-  {
+  {// I/O 错误状态的移动
     Status self_moved = Status::IOError("custom IOError status message");
 
     // Needed to bypass compiler warning about explicit move-assignment.

@@ -37,17 +37,17 @@
 #include "util/posix_logger.h"
 
 namespace leveldb {
-
+//定义了一些全局变量和常量，以及一个用于生成错误状态的函数 PosixError。
 namespace {
 
 // Set by EnvPosixTestHelper::SetReadOnlyMMapLimit() and MaxOpenFiles().
-int g_open_read_only_file_limit = -1;
+int g_open_read_only_file_limit = -1;// 用于限制 只读文件符的数量
 
 // Up to 1000 mmap regions for 64-bit binaries; none for 32-bit.
-constexpr const int kDefaultMmapLimit = (sizeof(void*) >= 8) ? 1000 : 0;
+constexpr const int kDefaultMmapLimit = (sizeof(void*) >= 8) ? 1000 : 0;// 表示 默认的内存映射区域的数量, 对于 64位系统, 默认1000 对于32位 默认是0
 
 // Can be set using EnvPosixTestHelper::SetReadOnlyMMapLimit().
-int g_mmap_limit = kDefaultMmapLimit;
+int g_mmap_limit = kDefaultMmapLimit;// 设置内存映射区域的数量
 
 // Common flags defined for all posix open operations
 #if defined(HAVE_O_CLOEXEC)
@@ -56,9 +56,9 @@ constexpr const int kOpenBaseFlags = O_CLOEXEC;
 constexpr const int kOpenBaseFlags = 0;
 #endif  // defined(HAVE_O_CLOEXEC)
 
-constexpr const size_t kWritableFileBufferSize = 65536;
+constexpr const size_t kWritableFileBufferSize = 65536;// 表示 可写文件缓冲区的大小
 
-Status PosixError(const std::string& context, int error_number) {
+Status PosixError(const std::string& context, int error_number) {// PosixError: 生成错误的状态
   if (error_number == ENOENT) {
     return Status::NotFound(context, std::strerror(error_number));
   } else {
@@ -70,7 +70,7 @@ Status PosixError(const std::string& context, int error_number) {
 // Currently used to limit read-only file descriptors and mmap file usage
 // so that we do not run out of file descriptors or virtual memory, or run into
 // kernel performance problems for very large databases.
-class Limiter {
+class Limiter {// 用于限制资源的使用
  public:
   // Limit maximum number of resources to |max_acquires|.
   Limiter(int max_acquires)
@@ -87,7 +87,7 @@ class Limiter {
 
   // If another resource is available, acquire it and return true.
   // Else return false.
-  bool Acquire() {
+  bool Acquire() {// 获取资源的方法
     int old_acquires_allowed =
         acquires_allowed_.fetch_sub(1, std::memory_order_relaxed);
 
@@ -106,7 +106,7 @@ class Limiter {
 
   // Release a resource acquired by a previous call to Acquire() that returned
   // true.
-  void Release() {
+  void Release() {//释放资源
     int old_acquires_allowed =
         acquires_allowed_.fetch_add(1, std::memory_order_relaxed);
 
@@ -133,7 +133,7 @@ class Limiter {
 //
 // Instances of this class are thread-friendly but not thread-safe, as required
 // by the SequentialFile API.
-class PosixSequentialFile final : public SequentialFile {
+class PosixSequentialFile final : public SequentialFile {// 用于顺序的读取文件
  public:
   PosixSequentialFile(std::string filename, int fd)
       : fd_(fd), filename_(std::move(filename)) {}
@@ -235,7 +235,7 @@ class PosixRandomAccessFile final : public RandomAccessFile {
 // Instances of this class are thread-safe, as required by the RandomAccessFile
 // API. Instances are immutable and Read() only calls thread-safe library
 // functions.
-class PosixMmapReadableFile final : public RandomAccessFile {
+class PosixMmapReadableFile final : public RandomAccessFile {//使用内存映射来读取文件
  public:
   // mmap_base[0, length-1] points to the memory-mapped contents of the file. It
   // must be the result of a successful call to mmap(). This instances takes
@@ -274,7 +274,7 @@ class PosixMmapReadableFile final : public RandomAccessFile {
   const std::string filename_;
 };
 
-class PosixWritableFile final : public WritableFile {
+class PosixWritableFile final : public WritableFile {//用于写入文件
  public:
   PosixWritableFile(std::string filename, int fd)
       : pos_(0),
@@ -464,7 +464,7 @@ class PosixWritableFile final : public WritableFile {
   const std::string dirname_;  // The directory of filename_.
 };
 
-int LockOrUnlock(int fd, bool lock) {
+int LockOrUnlock(int fd, bool lock) {// 用于锁定或解锁文件
   errno = 0;
   struct ::flock file_lock_info;
   std::memset(&file_lock_info, 0, sizeof(file_lock_info));
@@ -496,7 +496,7 @@ class PosixFileLock : public FileLock {
 // same process.
 //
 // Instances are thread-safe because all member data is guarded by a mutex.
-class PosixLockTable {
+class PosixLockTable {// 锁定文件
  public:
   bool Insert(const std::string& fname) LOCKS_EXCLUDED(mu_) {
     mu_.Lock();
