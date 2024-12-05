@@ -14,7 +14,9 @@
 #include "util/testutil.h"
 
 namespace leveldb {
-
+/**
+ * 定义了一个名为 RecoveryTest 的测试类，继承自 testing::Test。构造函数初始化环境、数据库路径，并销毁旧的数据库，然后打开新的数据库。
+ */
 class RecoveryTest : public testing::Test {
  public:
   RecoveryTest() : env_(Env::Default()), db_(nullptr) {
@@ -22,15 +24,21 @@ class RecoveryTest : public testing::Test {
     DestroyDB(dbname_, Options());
     Open();
   }
-
+/**
+ * 析构函数关闭数据库并销毁数据库文件。析构函数就是在这个对象在状态中消失的时候默认会进行的操作
+ */
   ~RecoveryTest() {
     Close();
     DestroyDB(dbname_, Options());
   }
-
+/**
+ * 提供了一些辅助方法，用于获取 DBImpl 和 Env 对象
+ */
   DBImpl* dbfull() const { return reinterpret_cast<DBImpl*>(db_); }
   Env* env() const { return env_; }
-
+/**
+ * 检查当前环境是否支持追加文件操作。
+ */
   bool CanAppend() {
     WritableFile* tmp;
     Status s = env_->NewAppendableFile(CurrentFileName(dbname_), &tmp);
@@ -41,12 +49,16 @@ class RecoveryTest : public testing::Test {
       return true;
     }
   }
-
+/**
+ * 关闭数据库并释放资源。
+ */
   void Close() {
     delete db_;
     db_ = nullptr;
   }
-
+/**
+ * 打开数据库，并返回状态。如果提供了选项，则使用提供的选项，否则使用默认选项。
+ */
   Status OpenWithStatus(Options* options = nullptr) {
     Close();
     Options opts;
@@ -61,16 +73,16 @@ class RecoveryTest : public testing::Test {
     }
     return DB::Open(opts, dbname_, &db_);
   }
-
+// 打开数据库并确保只有一个日志文件。
   void Open(Options* options = nullptr) {
     ASSERT_LEVELDB_OK(OpenWithStatus(options));
     ASSERT_EQ(1, NumLogs());
   }
-
+// 向数据库中写入键值对
   Status Put(const std::string& k, const std::string& v) {
     return db_->Put(WriteOptions(), k, v);
   }
-
+// 从数据库中读取键值对，如果找不到则返回 "NOT_FOUND"，如果有其他错误则返回错误信息。
   std::string Get(const std::string& k, const Snapshot* snapshot = nullptr) {
     std::string result;
     Status s = db_->Get(ReadOptions(), k, &result);
@@ -81,7 +93,7 @@ class RecoveryTest : public testing::Test {
     }
     return result;
   }
-
+// 获取当前的 Manifest 文件名。 Manifest 主要是包含 版本相关的数据
   std::string ManifestFileName() {
     std::string current;
     EXPECT_LEVELDB_OK(
@@ -92,9 +104,9 @@ class RecoveryTest : public testing::Test {
     }
     return dbname_ + "/" + current;
   }
-
+// 生成日志文件名。
   std::string LogName(uint64_t number) { return LogFileName(dbname_, number); }
-
+// 删除所有日志文件。
   size_t RemoveLogFiles() {
     // Linux allows unlinking open files, but Windows does not.
     // Closing the db allows for file deletion.
@@ -105,13 +117,13 @@ class RecoveryTest : public testing::Test {
     }
     return logs.size();
   }
-
+// 删除 Manifest 文件
   void RemoveManifestFile() {
     ASSERT_LEVELDB_OK(env_->RemoveFile(ManifestFileName()));
   }
-
+// 获取第一个日志文件的编号。
   uint64_t FirstLogFile() { return GetFiles(kLogFile)[0]; }
-
+// 获取指定类型的文件列表
   std::vector<uint64_t> GetFiles(FileType t) {
     std::vector<std::string> filenames;
     EXPECT_LEVELDB_OK(env_->GetChildren(dbname_, &filenames));
@@ -125,7 +137,7 @@ class RecoveryTest : public testing::Test {
     }
     return result;
   }
-
+//获取日志文件和表文件的数量。
   int NumLogs() { return GetFiles(kLogFile).size(); }
 
   int NumTables() { return GetFiles(kTableFile).size(); }
@@ -135,10 +147,11 @@ class RecoveryTest : public testing::Test {
     EXPECT_LEVELDB_OK(env_->GetFileSize(fname, &result)) << fname;
     return result;
   }
-
+  // 强制压缩内存表。
   void CompactMemTable() { dbfull()->TEST_CompactMemTable(); }
 
   // Directly construct a log file that sets key to val.
+
   void MakeLogFile(uint64_t lognum, SequenceNumber seq, Slice key, Slice val) {
     std::string fname = LogFileName(dbname_, lognum);
     WritableFile* file;
@@ -275,7 +288,7 @@ TEST_F(RecoveryTest, MultipleMemTables) {
     ASSERT_EQ(buf, Get(buf));
   }
 }
-
+// 测试 如果有多个日志文件的情况
 TEST_F(RecoveryTest, MultipleLogFiles) {
   ASSERT_LEVELDB_OK(Put("foo", "bar"));
   Close();

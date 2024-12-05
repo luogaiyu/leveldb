@@ -19,7 +19,7 @@
 namespace leveldb {
 
 typedef uint64_t Key;
-
+// 定义 Key 类型为 uint64_t，并定义一个比较器 Comparator，用于比较两个 Key。
 struct Comparator {
   int operator()(const Key& a, const Key& b) const {
     if (a < b) {
@@ -31,7 +31,7 @@ struct Comparator {
     }
   }
 };
-
+// 定义 Empty 测试用例，测试空跳表的行为。确保空跳表不包含任何元素，并且迭代器在各种情况下都是无效的。
 TEST(SkipTest, Empty) {
   Arena arena;
   Comparator cmp;
@@ -47,7 +47,7 @@ TEST(SkipTest, Empty) {
   iter.SeekToLast();
   ASSERT_TRUE(!iter.Valid());
 }
-
+// 定义 InsertAndLookup 测试用例，测试插入和查找操作。首先插入一些随机键，然后验证跳表中的键与标准集合中的键一致。接着测试迭代器的基本功能，包括向前和向后遍历。
 TEST(SkipTest, InsertAndLookup) {
   const int N = 2000;
   const int R = 5000;
@@ -212,6 +212,7 @@ class ConcurrentTest {
   SkipList<Key, Comparator> list_;
 
  public:
+ //用于测试多线程环境下的跳表行为。包括生成多部分键的方法、状态管理、写入步骤和读取步骤。
   ConcurrentTest() : list_(Comparator(), &arena_) {}
 
   // REQUIRES: External synchronization
@@ -286,6 +287,7 @@ constexpr uint32_t ConcurrentTest::K;
 
 // Simple test that does single-threaded testing of the ConcurrentTest
 // scaffolding.
+// 测试单线程环境下的并发读写操作。 下面就是一些对跳表的测试
 TEST(SkipTest, ConcurrentWithoutThreads) {
   ConcurrentTest test;
   Random rnd(test::RandomSeed());
@@ -294,7 +296,7 @@ TEST(SkipTest, ConcurrentWithoutThreads) {
     test.WriteStep(&rnd);
   }
 }
-
+// 定义 TestState 类，用于管理测试状态，包括启动、运行和完成状态。
 class TestState {
  public:
   ConcurrentTest t_;
@@ -338,7 +340,7 @@ static void ConcurrentReader(void* arg) {
   }
   state->Change(TestState::DONE);
 }
-
+// 运行多次并发测试。每次测试中，启动一个读者线程，然后进行多次写入操作，最后停止读者线程。
 static void RunConcurrent(int run) {
   const int seed = test::RandomSeed() + (run * 100);
   Random rnd(seed);

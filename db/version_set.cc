@@ -21,24 +21,24 @@
 
 namespace leveldb {
 
-static size_t TargetFileSize(const Options* options) {
+static size_t TargetFileSize(const Options* options) {// 返回目标文件大小，即 options->max_file_size
   return options->max_file_size;
 }
 
 // Maximum bytes of overlaps in grandparent (i.e., level+2) before we
 // stop building a single file in a level->level+1 compaction.
-static int64_t MaxGrandParentOverlapBytes(const Options* options) {
+static int64_t MaxGrandParentOverlapBytes(const Options* options) {// 返回最大祖父级重叠字节数，即 10 * TargetFileSize(options)
   return 10 * TargetFileSize(options);
 }
 
 // Maximum number of bytes in all compacted files.  We avoid expanding
 // the lower level file set of a compaction if it would make the
 // total compaction cover more than this many bytes.
-static int64_t ExpandedCompactionByteSizeLimit(const Options* options) {
+static int64_t ExpandedCompactionByteSizeLimit(const Options* options) {//返回扩展压缩字节大小限制
   return 25 * TargetFileSize(options);
 }
 
-static double MaxBytesForLevel(const Options* options, int level) {
+static double MaxBytesForLevel(const Options* options, int level) {// 计算给定级别的最大字节数。
   // Note: the result for level zero is not really used since we set
   // the level-0 compaction threshold based on number of files.
 

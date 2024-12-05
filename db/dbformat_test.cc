@@ -7,22 +7,22 @@
 #include "gtest/gtest.h"
 #include "util/logging.h"
 
-namespace leveldb {
+namespace leveldb {// leveldb 命名空间
 
 static std::string IKey(const std::string& user_key, uint64_t seq,
-                        ValueType vt) {
+                        ValueType vt) {// 用于生成内部键的字符串
   std::string encoded;
   AppendInternalKey(&encoded, ParsedInternalKey(user_key, seq, vt));
   return encoded;
 }
 
-static std::string Shorten(const std::string& s, const std::string& l) {
+static std::string Shorten(const std::string& s, const std::string& l) {// 函数用于找到两个内部键之间的最短分隔符。
   std::string result = s;
   InternalKeyComparator(BytewiseComparator()).FindShortestSeparator(&result, l);
   return result;
 }
 
-static std::string ShortSuccessor(const std::string& s) {
+static std::string ShortSuccessor(const std::string& s) {// 函数用于找到给定内部键的最短后继。
   std::string result = s;
   InternalKeyComparator(BytewiseComparator()).FindShortSuccessor(&result);
   return result;
@@ -42,7 +42,7 @@ static void TestKey(const std::string& key, uint64_t seq, ValueType vt) {
   ASSERT_TRUE(!ParseInternalKey(Slice("bar"), &decoded));
 }
 
-TEST(FormatTest, InternalKey_EncodeDecode) {
+TEST(FormatTest, InternalKey_EncodeDecode) {// 测试不同用户键和序列号的编码和解码
   const char* keys[] = {"", "k", "hello", "longggggggggggggggggggggg"};
   const uint64_t seq[] = {1,
                           2,

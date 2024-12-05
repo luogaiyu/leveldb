@@ -12,18 +12,18 @@
 
 namespace leveldb {
 
-static uint64_t PackSequenceAndType(uint64_t seq, ValueType t) {
+static uint64_t PackSequenceAndType(uint64_t seq, ValueType t) {// 函数用于将序列号和类型打包成一个 64 位整数。
   assert(seq <= kMaxSequenceNumber);
   assert(t <= kValueTypeForSeek);
   return (seq << 8) | t;
 }
 
-void AppendInternalKey(std::string* result, const ParsedInternalKey& key) {
+void AppendInternalKey(std::string* result, const ParsedInternalKey& key) {// 函数用于将 ParsedInternalKey 对象编码为字符串并追加到 result 中。
   result->append(key.user_key.data(), key.user_key.size());
   PutFixed64(result, PackSequenceAndType(key.sequence, key.type));
 }
 
-std::string ParsedInternalKey::DebugString() const {
+std::string ParsedInternalKey::DebugString() const {// 使用 std::ostringstream 构建字符串，包含用户键、序列号和类型。
   std::ostringstream ss;
   ss << '\'' << EscapeString(user_key.ToString()) << "' @ " << sequence << " : "
      << static_cast<int>(type);
@@ -40,11 +40,11 @@ std::string InternalKey::DebugString() const {
   return ss.str();
 }
 
-const char* InternalKeyComparator::Name() const {
+const char* InternalKeyComparator::Name() const {// Name 方法返回比较器的名称
   return "leveldb.InternalKeyComparator";
 }
 
-int InternalKeyComparator::Compare(const Slice& akey, const Slice& bkey) const {
+int InternalKeyComparator::Compare(const Slice& akey, const Slice& bkey) const {// 首先比较用户键，如果用户键相同，则比较序列号和类型。
   // Order by:
   //    increasing user key (according to user-supplied comparator)
   //    decreasing sequence number
@@ -63,7 +63,7 @@ int InternalKeyComparator::Compare(const Slice& akey, const Slice& bkey) const {
 }
 
 void InternalKeyComparator::FindShortestSeparator(std::string* start,
-                                                  const Slice& limit) const {
+                                                  const Slice& limit) const {//如果找到的分隔符比原始键短且逻辑上更大，则将其与最大序列号和类型组合，并替换原始键。
   // Attempt to shorten the user portion of the key
   Slice user_start = ExtractUserKey(*start);
   Slice user_limit = ExtractUserKey(limit);
@@ -114,7 +114,7 @@ bool InternalFilterPolicy::KeyMayMatch(const Slice& key, const Slice& f) const {
   return user_policy_->KeyMayMatch(ExtractUserKey(key), f);
 }
 
-LookupKey::LookupKey(const Slice& user_key, SequenceNumber s) {
+LookupKey::LookupKey(const Slice& user_key, SequenceNumber s) {// 构造函数用于生成查找键
   size_t usize = user_key.size();
   size_t needed = usize + 13;  // A conservative estimate
   char* dst;

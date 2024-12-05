@@ -39,7 +39,7 @@ void VersionEdit::Clear() {
   new_files_.clear();
 }
 
-void VersionEdit::EncodeTo(std::string* dst) const {
+void VersionEdit::EncodeTo(std::string* dst) const {// 将 VersionEdit 对象编码为字符串
   if (has_comparator_) {
     PutVarint32(dst, kComparator);
     PutLengthPrefixedSlice(dst, comparator_);
@@ -93,7 +93,7 @@ static bool GetInternalKey(Slice* input, InternalKey* dst) {
   }
 }
 
-static bool GetLevel(Slice* input, int* level) {
+static bool GetLevel(Slice* input, int* level) { // 从输入中解析级别
   uint32_t v;
   if (GetVarint32(input, &v) && v < config::kNumLevels) {
     *level = v;
@@ -103,7 +103,7 @@ static bool GetLevel(Slice* input, int* level) {
   }
 }
 
-Status VersionEdit::DecodeFrom(const Slice& src) {
+Status VersionEdit::DecodeFrom(const Slice& src) { // 从字符串中解码 VersionEdit 对象
   Clear();
   Slice input = src;
   const char* msg = nullptr;
@@ -203,7 +203,7 @@ Status VersionEdit::DecodeFrom(const Slice& src) {
   return result;
 }
 
-std::string VersionEdit::DebugString() const {
+std::string VersionEdit::DebugString() const {// 生成调试字符串
   std::string r;
   r.append("VersionEdit {");
   if (has_comparator_) {

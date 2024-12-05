@@ -10,12 +10,12 @@
 #include "util/coding.h"
 
 namespace leveldb {
-
+  // 定义一个结构体，用于存储表和文件的指针
 struct TableAndFile {
   RandomAccessFile* file;
   Table* table;
 };
-
+// 定义一个静态函数，用于删除缓存条目
 static void DeleteEntry(const Slice& key, void* value) {
   TableAndFile* tf = reinterpret_cast<TableAndFile*>(value);
   delete tf->table;
@@ -23,12 +23,12 @@ static void DeleteEntry(const Slice& key, void* value) {
   delete tf;
 }
 
-static void UnrefEntry(void* arg1, void* arg2) {
+static void UnrefEntry(void* arg1, void* arg2) {  // 定义一个静态函数，用于释放缓存句柄
   Cache* cache = reinterpret_cast<Cache*>(arg1);
   Cache::Handle* h = reinterpret_cast<Cache::Handle*>(arg2);
   cache->Release(h);
 }
-
+// 构造函数
 TableCache::TableCache(const std::string& dbname, const Options& options,
                        int entries)
     : env_(options.env),
@@ -36,10 +36,10 @@ TableCache::TableCache(const std::string& dbname, const Options& options,
       options_(options),
       cache_(NewLRUCache(entries)) {}
 
-TableCache::~TableCache() { delete cache_; }
+TableCache::~TableCache() { delete cache_; }// 析构函数
 
 Status TableCache::FindTable(uint64_t file_number, uint64_t file_size,
-                             Cache::Handle** handle) {
+                             Cache::Handle** handle) {// 查找表的方法
   Status s;
   char buf[sizeof(file_number)];
   EncodeFixed64(buf, file_number);
@@ -111,7 +111,7 @@ Status TableCache::Get(const ReadOptions& options, uint64_t file_number,
   return s;
 }
 
-void TableCache::Evict(uint64_t file_number) {
+void TableCache::Evict(uint64_t file_number) { // 从缓存中移除表的方法
   char buf[sizeof(file_number)];
   EncodeFixed64(buf, file_number);
   cache_->Erase(Slice(buf, sizeof(buf)));

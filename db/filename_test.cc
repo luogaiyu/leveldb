@@ -17,6 +17,7 @@ TEST(FileNameTest, Parse) {
   uint64_t number;
 
   // Successful parses
+  //用来测试不同的文件后缀
   static struct {
     const char* fname;
     uint64_t number;

@@ -41,7 +41,7 @@
 namespace leveldb {
 
 namespace {
-
+//定义 Repairer 类及其构造函数。构造函数初始化成员变量，并创建一个 TableCache 对象。
 class Repairer {
  public:
   Repairer(const std::string& dbname, const Options& options)
@@ -56,7 +56,7 @@ class Repairer {
     // TableCache can be small since we expect each table to be opened once.
     table_cache_ = new TableCache(dbname_, options_, 10);
   }
-
+// 定义 Repairer 类的析构函数，释放分配的资源
   ~Repairer() {
     delete table_cache_;
     if (owns_info_log_) {
@@ -66,7 +66,7 @@ class Repairer {
       delete options_.block_cache;
     }
   }
-
+// 定义 Run 方法，执行修复过程的主要步骤：查找文件、将日志文件转换为表、提取元数据并写入新的描述符文件。
   Status Run() {
     Status status = FindFiles();
     if (status.ok()) {
@@ -88,13 +88,13 @@ class Repairer {
     }
     return status;
   }
-
+// 定义一个内部结构 TableInfo，用于存储表的元数据和最大序列号。
  private:
   struct TableInfo {
     FileMetaData meta;
     SequenceNumber max_sequence;
   };
-
+// 定义 FindFiles 方法，查找数据库目录中的所有文件，并根据文件类型进行分类。
   Status FindFiles() {
     std::vector<std::string> filenames;
     Status status = env_->GetChildren(dbname_, &filenames);
@@ -127,7 +127,7 @@ class Repairer {
     }
     return status;
   }
-
+// 定义 ConvertLogFilesToTables 方法，将日志文件转换为表文件。
   void ConvertLogFilesToTables() {
     for (size_t i = 0; i < logs_.size(); i++) {
       std::string logname = LogFileName(dbname_, logs_[i]);
@@ -139,7 +139,7 @@ class Repairer {
       ArchiveFile(logname);
     }
   }
-
+// 
   Status ConvertLogToTable(uint64_t log) {
     struct LogReporter : public log::Reader::Reporter {
       Env* env;
@@ -180,6 +180,7 @@ class Repairer {
     MemTable* mem = new MemTable(icmp_);
     mem->Ref();
     int counter = 0;
+    // 将日志文件转换为表文件
     while (reader.ReadRecord(&record, &scratch)) {
       if (record.size() < 12) {
         reporter.Corruption(record.size(),
@@ -217,13 +218,13 @@ class Repairer {
         status.ToString().c_str());
     return status;
   }
-
+// 扫描所有表文件以提取元数据
   void ExtractMetaData() {
     for (size_t i = 0; i < table_numbers_.size(); i++) {
       ScanTable(table_numbers_[i]);
     }
   }
-
+// 创建一个新的表迭代器。
   Iterator* NewTableIterator(const FileMetaData& meta) {
     // Same as compaction iterators: if paranoid_checks are on, turn
     // on checksum verification.
@@ -231,7 +232,7 @@ class Repairer {
     r.verify_checksums = options_.paranoid_checks;
     return table_cache_->NewIterator(r, meta.number, meta.file_size);
   }
-
+// 扫描单个表文件以提取元数据
   void ScanTable(uint64_t number) {
     TableInfo t;
     t.meta.number = number;
@@ -290,7 +291,7 @@ class Repairer {
       RepairTable(fname, t);  // RepairTable archives input file.
     }
   }
-
+// 修复损坏的表文件。
   void RepairTable(const std::string& src, TableInfo t) {
     // We will copy src contents to a new table and then rename the
     // new table over the source.
@@ -344,7 +345,7 @@ class Repairer {
       env_->RemoveFile(copy);
     }
   }
-
+// 写入新的描述符文件。
   Status WriteDescriptor() {
     std::string tmp = TempFileName(dbname_, 1);
     WritableFile* file;
@@ -404,7 +405,7 @@ class Repairer {
     }
     return status;
   }
-
+// 将文件移动到另一个目录中存档
   void ArchiveFile(const std::string& fname) {
     // Move into another directory.  E.g., for
     //    dir/foo
@@ -424,7 +425,9 @@ class Repairer {
     Log(options_.info_log, "Archiving %s: %s\n", fname.c_str(),
         s.ToString().c_str());
   }
-
+/**
+ * 定义 Repairer 类的成员变量。
+ */
   const std::string dbname_;
   Env* const env_;
   InternalKeyComparator const icmp_;
@@ -442,7 +445,7 @@ class Repairer {
   uint64_t next_file_number_;
 };
 }  // namespace
-
+// 创建 Repairer 对象并运行修复过程
 Status RepairDB(const std::string& dbname, const Options& options) {
   Repairer repairer(dbname, options);
   return repairer.Run();

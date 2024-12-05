@@ -26,7 +26,9 @@
 #include "util/testutil.h"
 
 namespace leveldb {
-
+/**
+ * 定义了一些常量，用于测试中的参数设置
+ */
 static const int kValueSize = 1000;
 static const int kMaxNumValues = 2000;
 static const size_t kNumIterations = 3;
@@ -536,7 +538,7 @@ class FaultInjectionTest : public testing::Test {
     }
   }
 };
-
+// 通过注入异常
 TEST_F(FaultInjectionTest, FaultTestNoLogReuse) {
   ReuseLogs(false);
   DoTest();

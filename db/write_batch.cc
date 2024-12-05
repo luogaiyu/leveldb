@@ -26,18 +26,18 @@ namespace leveldb {
 // WriteBatch header has an 8-byte sequence number followed by a 4-byte count.
 static const size_t kHeader = 12;
 
-WriteBatch::WriteBatch() { Clear(); }
+WriteBatch::WriteBatch() { Clear(); }// 初始化
 
-WriteBatch::~WriteBatch() = default;
+WriteBatch::~WriteBatch() = default;// 默认的析构函数。
 
-WriteBatch::Handler::~Handler() = default;
+WriteBatch::Handler::~Handler() = default;// 默认的析构函数。
 
-void WriteBatch::Clear() {
+void WriteBatch::Clear() {// Clear 方法清空 rep_ 并重新设置为 kHeader 大小。
   rep_.clear();
   rep_.resize(kHeader);
 }
 
-size_t WriteBatch::ApproximateSize() const { return rep_.size(); }
+size_t WriteBatch::ApproximateSize() const { return rep_.size(); }// ApproximateSize 方法返回 WriteBatch 的近似大小（以字节为单位）
 
 Status WriteBatch::Iterate(Handler* handler) const {
   Slice input(rep_);

@@ -22,7 +22,7 @@
 namespace leveldb {
 
 namespace {
-
+// 用于猜测对应的文件类型
 bool GuessType(const std::string& fname, FileType* type) {
   size_t pos = fname.rfind('/');
   std::string basename;
@@ -51,6 +51,7 @@ class CorruptionReporter : public log::Reader::Reporter {
 };
 
 // Print contents of a log file. (*func)() is called on every record.
+// CorruptionReporter 用于报告文件中损坏的情况,函数用于打印日志文件的内容
 Status PrintLogContents(Env* env, const std::string& fname,
                         void (*func)(uint64_t, Slice, WritableFile*),
                         WritableFile* dst) {
@@ -94,6 +95,7 @@ class WriteBatchItemPrinter : public WriteBatch::Handler {
 
 // Called on every log record (each one of which is a WriteBatch)
 // found in a kLogFile.
+// 用于处理 WriteBatch 中的每条记录。当遇到 Put 或 Delete 操作时，会生成相应的输出并写入 dst_ 文件。
 static void WriteBatchPrinter(uint64_t pos, Slice record, WritableFile* dst) {
   std::string r = "--- offset ";
   AppendNumberTo(&r, pos);
@@ -118,7 +120,7 @@ static void WriteBatchPrinter(uint64_t pos, Slice record, WritableFile* dst) {
     dst->Append("  error: " + s.ToString() + "\n");
   }
 }
-
+// DumpLog 函数用于转储日志文件的内容。它调用 PrintLogContents 函数，并传入 WriteBatchPrinter 作为回调函数。
 Status DumpLog(Env* env, const std::string& fname, WritableFile* dst) {
   return PrintLogContents(env, fname, WriteBatchPrinter, dst);
 }
@@ -139,7 +141,7 @@ static void VersionEditPrinter(uint64_t pos, Slice record, WritableFile* dst) {
   }
   dst->Append(r);
 }
-
+// DumpDescriptor 函数用于转储描述符文件的内容。它调用 PrintLogContents 函数，并传入 VersionEditPrinter 作为回调函数。
 Status DumpDescriptor(Env* env, const std::string& fname, WritableFile* dst) {
   return PrintLogContents(env, fname, VersionEditPrinter, dst);
 }
@@ -210,7 +212,7 @@ Status DumpTable(Env* env, const std::string& fname, WritableFile* dst) {
 }
 
 }  // namespace
-
+// DumpTable 函数用于转储表文件的内容。它打开文件，创建一个 Table 对象，并使用迭代器遍历表中的所有键值对，生成输出并写入 dst 文件。
 Status DumpFile(Env* env, const std::string& fname, WritableFile* dst) {
   FileType ftype;
   if (!GuessType(fname, &ftype)) {

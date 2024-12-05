@@ -32,6 +32,7 @@ static std::string NumberString(int n) {
 }
 
 // Return a skewed potentially long string
+// 用于生成一个偏斜的随机字符串，长度由随机数生成器决定
 static std::string RandomSkewedString(int i, Random* rnd) {
   return BigString(NumberString(i), rnd->Skewed(17));
 }
@@ -234,7 +235,10 @@ class LogTest : public testing::Test {
   Writer* writer_;
   Reader* reader_;
 };
-
+/**
+ * 构造函数初始化成员变量。
+ * 析构函数释放资源。
+ */
 size_t LogTest::initial_offset_record_sizes_[] = {
     10000,  // Two sizable records in first block
     10000,
@@ -259,7 +263,7 @@ int LogTest::num_initial_offset_records_ =
     sizeof(LogTest::initial_offset_last_record_offsets_) / sizeof(uint64_t);
 
 TEST_F(LogTest, Empty) { ASSERT_EQ("EOF", Read()); }
-
+// 测试空日志文件的情况。
 TEST_F(LogTest, ReadWrite) {
   Write("foo");
   Write("bar");
@@ -272,7 +276,7 @@ TEST_F(LogTest, ReadWrite) {
   ASSERT_EQ("EOF", Read());
   ASSERT_EQ("EOF", Read());  // Make sure reads at eof work
 }
-
+// 测试基本的读写操作
 TEST_F(LogTest, ManyBlocks) {
   for (int i = 0; i < 100000; i++) {
     Write(NumberString(i));
@@ -282,7 +286,7 @@ TEST_F(LogTest, ManyBlocks) {
   }
   ASSERT_EQ("EOF", Read());
 }
-
+// 测试大量记录的读写操作。
 TEST_F(LogTest, Fragmentation) {
   Write("small");
   Write(BigString("medium", 50000));
@@ -292,7 +296,7 @@ TEST_F(LogTest, Fragmentation) {
   ASSERT_EQ(BigString("large", 100000), Read());
   ASSERT_EQ("EOF", Read());
 }
-
+// 测试分段记录的读写操作。
 TEST_F(LogTest, MarginalTrailer) {
   // Make a trailer that is exactly the same length as an empty record.
   const int n = kBlockSize - 2 * kHeaderSize;
@@ -305,7 +309,7 @@ TEST_F(LogTest, MarginalTrailer) {
   ASSERT_EQ("bar", Read());
   ASSERT_EQ("EOF", Read());
 }
-
+// 测试边缘拖尾记录的情况。
 TEST_F(LogTest, MarginalTrailer2) {
   // Make a trailer that is exactly the same length as an empty record.
   const int n = kBlockSize - 2 * kHeaderSize;
@@ -318,7 +322,7 @@ TEST_F(LogTest, MarginalTrailer2) {
   ASSERT_EQ(0, DroppedBytes());
   ASSERT_EQ("", ReportMessage());
 }
-
+// 测试另一种边缘拖尾记录的情况。
 TEST_F(LogTest, ShortTrailer) {
   const int n = kBlockSize - 2 * kHeaderSize + 4;
   Write(BigString("foo", n));
@@ -338,7 +342,7 @@ TEST_F(LogTest, AlignedEof) {
   ASSERT_EQ(BigString("foo", n), Read());
   ASSERT_EQ("EOF", Read());
 }
-
+// 测试短拖尾记录的情况。
 TEST_F(LogTest, OpenForAppend) {
   Write("hello");
   ReopenForAppend();
@@ -347,7 +351,7 @@ TEST_F(LogTest, OpenForAppend) {
   ASSERT_EQ("world", Read());
   ASSERT_EQ("EOF", Read());
 }
-
+// 测试对齐的 EOF 情况。
 TEST_F(LogTest, RandomRead) {
   const int N = 500;
   Random write_rnd(301);
@@ -362,7 +366,7 @@ TEST_F(LogTest, RandomRead) {
 }
 
 // Tests of all the error paths in log_reader.cc follow:
-
+// 测试重新打开文件以追加模式写入的情况。
 TEST_F(LogTest, ReadError) {
   Write("foo");
   ForceError();
@@ -370,7 +374,7 @@ TEST_F(LogTest, ReadError) {
   ASSERT_EQ(kBlockSize, DroppedBytes());
   ASSERT_EQ("OK", MatchError("read error"));
 }
-
+// 测试随机读写操作。
 TEST_F(LogTest, BadRecordType) {
   Write("foo");
   // Type is stored in header[6]

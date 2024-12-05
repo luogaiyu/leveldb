@@ -42,7 +42,7 @@ struct FileMetaData {
   InternalKey largest;   // Largest internal key served by table
 };
 
-class VersionEdit {
+class VersionEdit {// 定义 VersionEdit 类
  public:
   VersionEdit() { Clear(); }
   ~VersionEdit() = default;
@@ -69,13 +69,18 @@ class VersionEdit {
     has_last_sequence_ = true;
     last_sequence_ = seq;
   }
-  void SetCompactPointer(int level, const InternalKey& key) {
+  void SetCompactPointer(int level, const InternalKey& key) {// 设置压缩指针
     compact_pointers_.push_back(std::make_pair(level, key));
   }
 
   // Add the specified file at the specified number.
   // REQUIRES: This version has not been saved (see VersionSet::SaveTo)
   // REQUIRES: "smallest" and "largest" are smallest and largest keys in file
+  /**
+   *  // 添加指定的文件到指定的层级
+  // 要求：此版本尚未保存（参见 VersionSet::SaveTo）
+  // 要求："smallest" 和 "largest" 是文件中的最小和最大键
+   */
   void AddFile(int level, uint64_t file, uint64_t file_size,
                const InternalKey& smallest, const InternalKey& largest) {
     FileMetaData f;

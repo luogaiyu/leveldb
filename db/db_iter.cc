@@ -36,7 +36,7 @@ namespace {
 // combines multiple entries for the same userkey found in the DB
 // representation into a single entry while accounting for sequence
 // numbers, deletion markers, overwrites, etc.
-class DBIter : public Iterator {
+class DBIter : public Iterator {// 
  public:
   // Which direction is the iterator currently moving?
   // (1) When moving forward, the internal iterator is positioned at
@@ -44,7 +44,7 @@ class DBIter : public Iterator {
   // (2) When moving backwards, the internal iterator is positioned
   //     just before all entries whose user key == this->key().
   enum Direction { kForward, kReverse };
-
+// 初始化 DBIter 的各个成员变量，包括数据库实例、比较器、内部迭代器、序列号、随机数生成器等。
   DBIter(DBImpl* db, const Comparator* cmp, Iterator* iter, SequenceNumber s,
          uint32_t seed)
       : db_(db),
@@ -58,9 +58,9 @@ class DBIter : public Iterator {
 
   DBIter(const DBIter&) = delete;
   DBIter& operator=(const DBIter&) = delete;
-
+// 释放内部迭代器
   ~DBIter() override { delete iter_; }
-  bool Valid() const override { return valid_; }
+  bool Valid() const override { return valid_; }// 实现 Iterator 接口的基本方法，如 Valid、key、value、status 等。
   Slice key() const override {
     assert(valid_);
     return (direction_ == kForward) ? ExtractUserKey(iter_->key()) : saved_key_;
@@ -87,7 +87,8 @@ class DBIter : public Iterator {
   void FindNextUserEntry(bool skipping, std::string* skip);
   void FindPrevUserEntry();
   bool ParseKey(ParsedInternalKey* key);
-
+// SaveKey：保存键。
+// ClearSavedValue：清除保存的值，释放内存。
   inline void SaveKey(const Slice& k, std::string* dst) {
     dst->assign(k.data(), k.size());
   }
@@ -118,7 +119,7 @@ class DBIter : public Iterator {
   Random rnd_;
   size_t bytes_until_read_sampling_;
 };
-
+// 解析内部键。记录读取样本并检查键是否有效。
 inline bool DBIter::ParseKey(ParsedInternalKey* ikey) {
   Slice k = iter_->key();
 
@@ -137,7 +138,7 @@ inline bool DBIter::ParseKey(ParsedInternalKey* ikey) {
     return true;
   }
 }
-
+// 移动到下一个用户键条目, 如果当前方向是反向, 则切换方向并调整内部迭代器的位置
 void DBIter::Next() {
   assert(valid_);
 
@@ -173,7 +174,7 @@ void DBIter::Next() {
 
   FindNextUserEntry(true, &saved_key_);
 }
-
+// 
 void DBIter::FindNextUserEntry(bool skipping, std::string* skip) {
   // Loop until we hit an acceptable entry to yield
   assert(iter_->Valid());
@@ -205,7 +206,7 @@ void DBIter::FindNextUserEntry(bool skipping, std::string* skip) {
   saved_key_.clear();
   valid_ = false;
 }
-
+// 移动到上一个用户键条目。如果当前方向是正向，则切换方向并调整内部迭代器的位置
 void DBIter::Prev() {
   assert(valid_);
 
@@ -232,7 +233,7 @@ void DBIter::Prev() {
 
   FindPrevUserEntry();
 }
-
+// 查找上一个有效的用户键条目。处理删除标记和值类型条目，跳过被删除或隐藏的条目
 void DBIter::FindPrevUserEntry() {
   assert(direction_ == kReverse);
 
@@ -275,7 +276,7 @@ void DBIter::FindPrevUserEntry() {
   }
 }
 
-void DBIter::Seek(const Slice& target) {
+void DBIter::Seek(const Slice& target) {// 定位到指定的用户键。调整内部迭代器的位置并查找第一个有效的用户键条目
   direction_ = kForward;
   ClearSavedValue();
   saved_key_.clear();
@@ -300,7 +301,7 @@ void DBIter::SeekToFirst() {
   }
 }
 
-void DBIter::SeekToLast() {
+void DBIter::SeekToLast() {// 定位到最后一个用户键。调整内部迭代器的位置并查找最后一个有效的用户键条目
   direction_ = kReverse;
   ClearSavedValue();
   iter_->SeekToLast();
@@ -308,7 +309,7 @@ void DBIter::SeekToLast() {
 }
 
 }  // anonymous namespace
-
+// 创建一个新的 DBIter 实例。
 Iterator* NewDBIterator(DBImpl* db, const Comparator* user_key_comparator,
                         Iterator* internal_iter, SequenceNumber sequence,
                         uint32_t seed) {

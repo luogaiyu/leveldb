@@ -12,14 +12,14 @@
 
 namespace leveldb {
 namespace log {
-
+// 用于初始化记录类型的 CRC32 校验和：
 static void InitTypeCrc(uint32_t* type_crc) {
   for (int i = 0; i <= kMaxRecordType; i++) {
     char t = static_cast<char>(i);
     type_crc[i] = crc32c::Value(&t, 1);
   }
 }
-
+// 初始化 对应的Crc 校验和
 Writer::Writer(WritableFile* dest) : dest_(dest), block_offset_(0) {
   InitTypeCrc(type_crc_);
 }
@@ -30,7 +30,9 @@ Writer::Writer(WritableFile* dest, uint64_t dest_length)
 }
 
 Writer::~Writer() = default;
-
+/**
+ * 定义了 Writer 类的 AddRecord 方法，用于添加一条记录：
+ */
 Status Writer::AddRecord(const Slice& slice) {
   const char* ptr = slice.data();
   size_t left = slice.size();
@@ -78,7 +80,7 @@ Status Writer::AddRecord(const Slice& slice) {
   } while (s.ok() && left > 0);
   return s;
 }
-
+// 用于发出物理记录：主要用来操作对应的硬盘IO, 寄存器
 Status Writer::EmitPhysicalRecord(RecordType t, const char* ptr,
                                   size_t length) {
   assert(length <= 0xffff);  // Must fit in two bytes

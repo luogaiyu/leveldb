@@ -34,7 +34,10 @@
 #include "util/coding.h"
 #include "util/logging.h"
 #include "util/mutexlock.h"
-
+/**
+ * 这段代码实现了 LevelDB 数据库的核心功能，包括数据库的创建、恢复、写入、压缩、属性获取等。通过这些功能，LevelDB 能够高效地管理和操作大量的键值对数据。理解这些代码有助于深入掌握 LevelDB 的内部机制和优化技巧。
+ * 涉及到 数据库的创建恢复写入压缩等等关键功能
+ */
 namespace leveldb {
 
 // 非表缓存文件的数量
@@ -126,7 +129,7 @@ static int TableCacheSize(const Options& sanitized_options) {
   // Reserve ten files or so for other uses and give the rest to TableCache.
   return sanitized_options.max_open_files - kNumNonTableCacheFiles;
 }
-
+// 构造函数：初始化数据库的各种资源，包括环境、比较器、过滤策略、选项、表缓存等。
 DBImpl::DBImpl(const Options& raw_options, const std::string& dbname)
     : env_(raw_options.env),
       internal_comparator_(raw_options.comparator),
@@ -152,7 +155,7 @@ DBImpl::DBImpl(const Options& raw_options, const std::string& dbname)
       manual_compaction_(nullptr),
       versions_(new VersionSet(dbname_, &options_, table_cache_,
                                &internal_comparator_)) {}
-
+// 析构函数：释放所有资源，确保所有后台工作完成后再进行清理。
 DBImpl::~DBImpl() {
   // Wait for background work to finish.
   mutex_.Lock();
@@ -181,7 +184,7 @@ DBImpl::~DBImpl() {
     delete options_.block_cache;
   }
 }
-
+// 新建数据库, 生成描述符文件和当前文件
 Status DBImpl::NewDB() {
   VersionEdit new_db;
   new_db.SetComparatorName(user_comparator()->Name());
@@ -324,7 +327,9 @@ Status DBImpl::Recover(VersionEdit* edit, bool* save_manifest) {
                                      "exists (error_if_exists is true)");
     }
   }
-
+/**
+ * 恢复数据库, 包括获取当前文件, 恢复版本集, 恢复日志文件
+ */
   s = versions_->Recover(save_manifest);
   if (!s.ok()) {
     return s;
@@ -549,7 +554,9 @@ Status DBImpl::WriteLevel0Table(MemTable* mem, VersionEdit* edit,
   stats_[level].Add(stats);
   return s;
 }
-
+/**
+ * 压缩内存表,将不可变内存表压缩为新的表文件，并更新版本集。
+ */
 void DBImpl::CompactMemTable() {
   mutex_.AssertHeld();
   assert(imm_ != nullptr);
@@ -1208,7 +1215,7 @@ Status DBImpl::Put(const WriteOptions& o, const Slice& key, const Slice& val) {
 Status DBImpl::Delete(const WriteOptions& options, const Slice& key) {
   return DB::Delete(options, key);
 }
-// 没有
+// 写入操作, 处理写入请求, 包括将写操作加入队列, 等待执行, 实际写入日志和内存表
 Status DBImpl::Write(const WriteOptions& options, WriteBatch* updates) {
   Writer w(&mutex_);
   w.batch = updates;
@@ -1429,7 +1436,9 @@ Status DBImpl::MakeRoomForWrite(bool force) {
   }
   return s;
 }
-
+/**
+ * 其他辅助方法, 获取属性
+ */
 bool DBImpl::GetProperty(const Slice& property, std::string* value) {
   value->clear();
 
@@ -1525,7 +1534,10 @@ Status DB::Delete(const WriteOptions& opt, const Slice& key) {
 }
 
 DB::~DB() = default;
-
+/**
+ * 打开数据库: 打开数据库，包括恢复、创建新的日志文件和内存表等。
+ * 销毁数据库: 销毁数据库，删除所有相关的文件。
+ */
 Status DB::Open(const Options& options, const std::string& dbname, DB** dbptr) {
   *dbptr = nullptr;
 

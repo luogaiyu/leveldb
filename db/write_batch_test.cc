@@ -10,7 +10,7 @@
 #include "util/logging.h"
 
 namespace leveldb {
-
+// 定义了一个辅助函数 PrintContents，用于打印 WriteBatch 的内容。
 static std::string PrintContents(WriteBatch* b) {
   InternalKeyComparator cmp(BytewiseComparator());
   MemTable* mem = new MemTable(cmp);
@@ -51,13 +51,13 @@ static std::string PrintContents(WriteBatch* b) {
   return state;
 }
 
-TEST(WriteBatchTest, Empty) {
+TEST(WriteBatchTest, Empty) {// 测试空的 WriteBatch。
   WriteBatch batch;
   ASSERT_EQ("", PrintContents(&batch));
   ASSERT_EQ(0, WriteBatchInternal::Count(&batch));
 }
 
-TEST(WriteBatchTest, Multiple) {
+TEST(WriteBatchTest, Multiple) {// 测试包含多个操作的 WriteBatch。
   WriteBatch batch;
   batch.Put(Slice("foo"), Slice("bar"));
   batch.Delete(Slice("box"));

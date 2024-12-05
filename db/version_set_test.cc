@@ -10,7 +10,7 @@
 
 namespace leveldb {
 
-class FindFileTest : public testing::Test {
+class FindFileTest : public testing::Test { // 定义 FindFileTest 类，继承自 testing::Test
  public:
   FindFileTest() : disjoint_sorted_files_(true) {}
 
@@ -30,13 +30,13 @@ class FindFileTest : public testing::Test {
     files_.push_back(f);
   }
 
-  int Find(const char* key) {
+  int Find(const char* key) { // 查找文件
     InternalKey target(key, 100, kTypeValue);
     InternalKeyComparator cmp(BytewiseComparator());
     return FindFile(cmp, files_, target.Encode());
   }
 
-  bool Overlaps(const char* smallest, const char* largest) {
+  bool Overlaps(const char* smallest, const char* largest) { // 检查文件范围是否有重叠
     InternalKeyComparator cmp(BytewiseComparator());
     Slice s(smallest != nullptr ? smallest : "");
     Slice l(largest != nullptr ? largest : "");
@@ -45,13 +45,13 @@ class FindFileTest : public testing::Test {
                                  (largest != nullptr ? &l : nullptr));
   }
 
-  bool disjoint_sorted_files_;
+  bool disjoint_sorted_files_;// 标记文件是否不相交且排序
 
  private:
-  std::vector<FileMetaData*> files_;
+  std::vector<FileMetaData*> files_; // 存储文件元数据对象的向量
 };
 
-TEST_F(FindFileTest, Empty) {
+TEST_F(FindFileTest, Empty) { // 测试空文件列表
   ASSERT_EQ(0, Find("foo"));
   ASSERT_TRUE(!Overlaps("a", "z"));
   ASSERT_TRUE(!Overlaps(nullptr, "z"));
@@ -59,7 +59,7 @@ TEST_F(FindFileTest, Empty) {
   ASSERT_TRUE(!Overlaps(nullptr, nullptr));
 }
 
-TEST_F(FindFileTest, Single) {
+TEST_F(FindFileTest, Single) { // 测试单个文件
   Add("p", "q");
   ASSERT_EQ(0, Find("a"));
   ASSERT_EQ(0, Find("p"));
@@ -89,7 +89,7 @@ TEST_F(FindFileTest, Single) {
   ASSERT_TRUE(Overlaps(nullptr, nullptr));
 }
 
-TEST_F(FindFileTest, Multiple) {
+TEST_F(FindFileTest, Multiple) {// 测试多个文件
   Add("150", "200");
   Add("200", "250");
   Add("300", "350");
@@ -127,7 +127,7 @@ TEST_F(FindFileTest, Multiple) {
   ASSERT_TRUE(Overlaps("450", "500"));
 }
 
-TEST_F(FindFileTest, MultipleNullBoundaries) {
+TEST_F(FindFileTest, MultipleNullBoundaries) {// 测试多个文件，边界为 nullptr
   Add("150", "200");
   Add("200", "250");
   Add("300", "350");

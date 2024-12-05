@@ -15,12 +15,15 @@
 #include "leveldb/write_batch.h"
 #include "util/logging.h"
 #include "util/testutil.h"
+/**
+ * 这个代码主要是对数据库崩溃状态下进行一些测试
+ */
 
 namespace leveldb {
 
-static const int kValueSize = 1000;
+static const int kValueSize = 1000;// value的大小
 
-class CorruptionTest : public testing::Test {
+class CorruptionTest : public testing::Test {// 相当于 用GoTest 生成了一个test
  public:
   CorruptionTest()
       : db_(nullptr),
@@ -190,7 +193,7 @@ class CorruptionTest : public testing::Test {
   Cache* tiny_cache_;
 };
 
-TEST_F(CorruptionTest, Recovery) {
+TEST_F(CorruptionTest, Recovery) {// 恢复测试
   Build(100);
   Check(100, 100);
   Corrupt(kLogFile, 19, 1);  // WriteBatch tag for first record
@@ -201,13 +204,13 @@ TEST_F(CorruptionTest, Recovery) {
   Check(36, 36);
 }
 
-TEST_F(CorruptionTest, RecoverWriteError) {
+TEST_F(CorruptionTest, RecoverWriteError) {// 写入错误恢复测试
   env_.writable_file_error_ = true;
   Status s = TryReopen();
   ASSERT_TRUE(!s.ok());
 }
 
-TEST_F(CorruptionTest, NewFileErrorDuringWrite) {
+TEST_F(CorruptionTest, NewFileErrorDuringWrite) {// 新文件错误测试
   // Do enough writing to force minor compaction
   env_.writable_file_error_ = true;
   const int num = 3 + (Options().write_buffer_size / kValueSize);
@@ -224,7 +227,7 @@ TEST_F(CorruptionTest, NewFileErrorDuringWrite) {
   Reopen();
 }
 
-TEST_F(CorruptionTest, TableFile) {
+TEST_F(CorruptionTest, TableFile) {// 表文件损坏测试
   Build(100);
   DBImpl* dbi = reinterpret_cast<DBImpl*>(db_);
   dbi->TEST_CompactMemTable();
@@ -235,7 +238,7 @@ TEST_F(CorruptionTest, TableFile) {
   Check(90, 99);
 }
 
-TEST_F(CorruptionTest, TableFileRepair) {
+TEST_F(CorruptionTest, TableFileRepair) {// 表文件损坏修复测试
   options_.block_size = 2 * kValueSize;  // Limit scope of corruption
   options_.paranoid_checks = true;
   Reopen();
@@ -251,7 +254,7 @@ TEST_F(CorruptionTest, TableFileRepair) {
   Check(95, 99);
 }
 
-TEST_F(CorruptionTest, TableFileIndexData) {
+TEST_F(CorruptionTest, TableFileIndexData) {// 表文件索引数据损坏测试
   Build(10000);  // Enough to build multiple Tables
   DBImpl* dbi = reinterpret_cast<DBImpl*>(db_);
   dbi->TEST_CompactMemTable();
@@ -261,14 +264,14 @@ TEST_F(CorruptionTest, TableFileIndexData) {
   Check(5000, 9999);
 }
 
-TEST_F(CorruptionTest, MissingDescriptor) {
+TEST_F(CorruptionTest, MissingDescriptor) {// 描述符文件丢失测试
   Build(1000);
   RepairDB();
   Reopen();
   Check(1000, 1000);
 }
 
-TEST_F(CorruptionTest, SequenceNumberRecovery) {
+TEST_F(CorruptionTest, SequenceNumberRecovery) {// 序列号恢复测试
   ASSERT_LEVELDB_OK(db_->Put(WriteOptions(), "foo", "v1"));
   ASSERT_LEVELDB_OK(db_->Put(WriteOptions(), "foo", "v2"));
   ASSERT_LEVELDB_OK(db_->Put(WriteOptions(), "foo", "v3"));
@@ -306,7 +309,7 @@ TEST_F(CorruptionTest, CorruptedDescriptor) {
   ASSERT_EQ("hello", v);
 }
 
-TEST_F(CorruptionTest, CompactionInputError) {
+TEST_F(CorruptionTest, CompactionInputError) {// 描述符文件损坏测试
   Build(10);
   DBImpl* dbi = reinterpret_cast<DBImpl*>(db_);
   dbi->TEST_CompactMemTable();
@@ -321,7 +324,7 @@ TEST_F(CorruptionTest, CompactionInputError) {
   Check(10000, 10000);
 }
 
-TEST_F(CorruptionTest, CompactionInputErrorParanoid) {
+TEST_F(CorruptionTest, CompactionInputErrorParanoid) {// 压缩输入错误测试
   options_.paranoid_checks = true;
   options_.write_buffer_size = 512 << 10;
   Reopen();
@@ -342,7 +345,7 @@ TEST_F(CorruptionTest, CompactionInputErrorParanoid) {
   ASSERT_TRUE(!s.ok()) << "write did not fail in corrupted paranoid db";
 }
 
-TEST_F(CorruptionTest, UnrelatedKeys) {
+TEST_F(CorruptionTest, UnrelatedKeys) {// 压缩输入错误（偏执模式）测试 无关键测试：
   Build(10);
   DBImpl* dbi = reinterpret_cast<DBImpl*>(db_);
   dbi->TEST_CompactMemTable();

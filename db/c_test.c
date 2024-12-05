@@ -9,9 +9,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-const char* phase = "";
+const char* phase = "";// 记录当前测试阶段的名称
 
-static void StartPhase(const char* name) {
+static void StartPhase(const char* name) {// StartPharse 函数, 用于开始 一个新的测试阶段, 打印阶段并更新phase变量
   fprintf(stderr, "=== Test %s\n", name);
   phase = name;
 }
@@ -28,7 +28,7 @@ static void StartPhase(const char* name) {
     abort();                                                            \
   }
 
-static void CheckEqual(const char* expected, const char* v, size_t n) {
+static void CheckEqual(const char* expected, const char* v, size_t n) {// 用于检查条件, 如果条件不满足, 打印错误信息并终止程序
   if (expected == NULL && v == NULL) {
     // ok
   } else if (expected != NULL && v != NULL && n == strlen(expected) &&
@@ -44,14 +44,14 @@ static void CheckEqual(const char* expected, const char* v, size_t n) {
   }
 }
 
-static void Free(char** ptr) {
+static void Free(char** ptr) {// 用于释放动态分配的内存并设置指针为NULL
   if (*ptr) {
     free(*ptr);
     *ptr = NULL;
   }
 }
 
-static void CheckGet(
+static void CheckGet(// 用于从数据库中获取键值对并检查结果是否符合预期。
     leveldb_t* db,
     const leveldb_readoptions_t* options,
     const char* key,
@@ -66,7 +66,7 @@ static void CheckGet(
 }
 
 static void CheckIter(leveldb_iterator_t* iter,
-                      const char* key, const char* val) {
+                      const char* key, const char* val) {//用于检查迭代器的键值对是否符合预期
   size_t len;
   const char* str;
   str = leveldb_iter_key(iter, &len);
@@ -78,7 +78,7 @@ static void CheckIter(leveldb_iterator_t* iter,
 // Callback from leveldb_writebatch_iterate()
 static void CheckPut(void* ptr,
                      const char* k, size_t klen,
-                     const char* v, size_t vlen) {
+                     const char* v, size_t vlen) {//用于检查写批处理中的 Put 操作。
   int* state = (int*) ptr;
   CheckCondition(*state < 2);
   switch (*state) {
@@ -95,17 +95,17 @@ static void CheckPut(void* ptr,
 }
 
 // Callback from leveldb_writebatch_iterate()
-static void CheckDel(void* ptr, const char* k, size_t klen) {
+static void CheckDel(void* ptr, const char* k, size_t klen) {//定义 CheckDel 回调函数，用于检查写批处理中的 Delete 操作。
   int* state = (int*) ptr;
   CheckCondition(*state == 2);
   CheckEqual("bar", k, klen);
   (*state)++;
 }
 
-static void CmpDestroy(void* arg) { }
+static void CmpDestroy(void* arg) { }//用于销毁比较器。
 
 static int CmpCompare(void* arg, const char* a, size_t alen,
-                      const char* b, size_t blen) {
+                      const char* b, size_t blen) {//用于比较两个键。
   int n = (alen < blen) ? alen : blen;
   int r = memcmp(a, b, n);
   if (r == 0) {
@@ -115,7 +115,7 @@ static int CmpCompare(void* arg, const char* a, size_t alen,
   return r;
 }
 
-static const char* CmpName(void* arg) {
+static const char* CmpName(void* arg) {// 用于返回比较器的名称
   return "foo";
 }
 
@@ -129,7 +129,7 @@ static char* FilterCreate(
     void* arg,
     const char* const* key_array, const size_t* key_length_array,
     int num_keys,
-    size_t* filter_length) {
+    size_t* filter_length) {//定义自定义过滤策略的相关函数。
   *filter_length = 4;
   char* result = malloc(4);
   memcpy(result, "fake", 4);
@@ -142,7 +142,7 @@ uint8_t FilterKeyMatch(void* arg, const char* key, size_t length,
   return fake_filter_result;
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv) {//定义主函数，初始化变量并检查 LevelDB 版本。
   leveldb_t* db;
   leveldb_comparator_t* cmp;
   leveldb_cache_t* cache;
@@ -163,7 +163,7 @@ int main(int argc, char** argv) {
   cache = leveldb_cache_create_lru(100000);
   dbname = leveldb_env_get_test_directory(env);
   CheckCondition(dbname != NULL);
-
+//创建和配置各种 LevelDB 对象。 下面就是一些测试功能
   options = leveldb_options_create();
   leveldb_options_set_comparator(options, cmp);
   leveldb_options_set_error_if_exists(options, 1);
@@ -184,7 +184,7 @@ int main(int argc, char** argv) {
 
   woptions = leveldb_writeoptions_create();
   leveldb_writeoptions_set_sync(woptions, 1);
-
+//销毁数据库。
   StartPhase("destroy");
   leveldb_destroy_db(options, dbname, &err);
   Free(&err);

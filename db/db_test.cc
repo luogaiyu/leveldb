@@ -282,6 +282,7 @@ class DBTest : public testing::Test {
 
   // Switch to a fresh database with the next option configuration to
   // test.  Return false if there are no more configurations to test.
+  // 
   bool ChangeOptions() {
     option_config_++;
     if (option_config_ >= kEnd) {
@@ -344,7 +345,7 @@ class DBTest : public testing::Test {
 
     return DB::Open(opts, dbname_, &db_);
   }
-
+// 使用批量写入
   Status Put(const std::string& k, const std::string& v) {
     return db_->Put(WriteOptions(), k, v);
   }
@@ -511,13 +512,13 @@ class DBTest : public testing::Test {
       }
     }
   }
-
+// 删除 SSTable
   std::string DumpSSTableList() {
     std::string property;
     db_->GetProperty("leveldb.sstables", &property);
     return property;
   }
-
+// 主要是 IterStatus
   std::string IterStatus(Iterator* iter) {
     std::string result;
     if (iter->Valid()) {

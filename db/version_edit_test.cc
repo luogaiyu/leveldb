@@ -8,7 +8,7 @@
 
 namespace leveldb {
 
-static void TestEncodeDecode(const VersionEdit& edit) {
+static void TestEncodeDecode(const VersionEdit& edit) {// 定义一个静态函数，用于测试编码和解码
   std::string encoded, encoded2;
   edit.EncodeTo(&encoded);
   VersionEdit parsed;
@@ -18,7 +18,7 @@ static void TestEncodeDecode(const VersionEdit& edit) {
   ASSERT_EQ(encoded, encoded2);
 }
 
-TEST(VersionEditTest, EncodeDecode) {
+TEST(VersionEditTest, EncodeDecode) { // 定义一个单元测试，测试编码和解码功能
   static const uint64_t kBig = 1ull << 50;
 
   VersionEdit edit;

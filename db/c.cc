@@ -90,7 +90,8 @@ struct leveldb_logger_t {
 struct leveldb_filelock_t {
   FileLock* rep;
 };
-
+// 定义了 LevelDB 的 C API 结构体，每个结构体包含一个指向相应 LevelDB 类型的指针。
+//定义了比较器和过滤策略的结构体，实现了相应的虚函数。
 struct leveldb_comparator_t : public Comparator {
   ~leveldb_comparator_t() override { (*destructor_)(state_); }
 
@@ -143,13 +144,13 @@ struct leveldb_filterpolicy_t : public FilterPolicy {
   uint8_t (*key_match_)(void*, const char* key, size_t length,
                         const char* filter, size_t filter_length);
 };
-
+// 定义了环境的结构体。
 struct leveldb_env_t {
   Env* rep;
   bool is_default;
 };
 
-static bool SaveError(char** errptr, const Status& s) {
+static bool SaveError(char** errptr, const Status& s) {// 辅助函数 定义了辅助函数 SaveError 和 CopyString，用于处理错误和复制字符串。
   assert(errptr != nullptr);
   if (s.ok()) {
     return false;
@@ -166,10 +167,10 @@ static bool SaveError(char** errptr, const Status& s) {
 static char* CopyString(const std::string& str) {
   char* result =
       reinterpret_cast<char*>(std::malloc(sizeof(char) * str.size()));
-  std::memcpy(result, str.data(), sizeof(char) * str.size());
+  std::memcpy(result, str.data(), sizeof(char) * str.size());// 用于在内存之间复制数据
   return result;
 }
-
+// 定义了 创建 销毁, 清楚, 删除 插入,迭代, 追加写批处理的函数
 leveldb_t* leveldb_open(const leveldb_options_t* options, const char* name,
                         char** errptr) {
   DB* db;
@@ -449,7 +450,7 @@ leveldb_comparator_t* leveldb_comparator_create(
 }
 
 void leveldb_comparator_destroy(leveldb_comparator_t* cmp) { delete cmp; }
-
+// 然后是创建比较器和过滤策略, 这里的过滤策略主要指的是
 leveldb_filterpolicy_t* leveldb_filterpolicy_create(
     void* state, void (*destructor)(void*),
     char* (*create_filter)(void*, const char* const* key_array,
@@ -560,7 +561,7 @@ char* leveldb_env_get_test_directory(leveldb_env_t* env) {
   buffer[result.size()] = '\0';
   return buffer;
 }
-
+// 然后就是一些 leveldb的数据
 void leveldb_free(void* ptr) { std::free(ptr); }
 
 int leveldb_major_version() { return kMajorVersion; }

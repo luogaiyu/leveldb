@@ -14,9 +14,11 @@
 namespace leveldb {
 
 // A utility routine: write "data" to the named file and Sync() it.
+// 用于将数据写入指定文件并同步到磁盘
+// 主要使用 MakeFileName作为底层抽象 对上层不同的静态文件名称来提供支持
 Status WriteStringToFileSync(Env* env, const Slice& data,
                              const std::string& fname);
-
+// 生成静态文件名称
 static std::string MakeFileName(const std::string& dbname, uint64_t number,
                                 const char* suffix) {
   char buf[100];

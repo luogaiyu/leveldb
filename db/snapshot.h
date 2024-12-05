@@ -3,7 +3,7 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #ifndef STORAGE_LEVELDB_DB_SNAPSHOT_H_
-#define STORAGE_LEVELDB_DB_SNAPSHOT_H_
+#define STORAGE_LEVELDB_DB_SNAPSHOT_H_// 防止头文件被多次包含
 
 #include "db/dbformat.h"
 #include "leveldb/db.h"
@@ -15,6 +15,7 @@ class SnapshotList;
 // Snapshots are kept in a doubly-linked list in the DB.
 // Each SnapshotImpl corresponds to a particular sequence number.
 class SnapshotImpl : public Snapshot {
+  //返回当前快照的序列号。
  public:
   SnapshotImpl(SequenceNumber sequence_number)
       : sequence_number_(sequence_number) {}

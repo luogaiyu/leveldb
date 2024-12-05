@@ -13,15 +13,20 @@ namespace {
 
 class StdoutPrinter : public WritableFile {
  public:
+ // Append 方法将数据写入标准输出
   Status Append(const Slice& data) override {
     fwrite(data.data(), 1, data.size(), stdout);
     return Status::OK();
   }
+  // Close、Flush 和 Sync 方法都返回成功状态 Status::OK()
   Status Close() override { return Status::OK(); }
   Status Flush() override { return Status::OK(); }
   Status Sync() override { return Status::OK(); }
 };
-
+/**
+ * 遍历所有指定的文件，调用 DumpFile 函数将文件内容写入 printer。
+ * 如果 DumpFile 返回的状态不是成功状态，则将错误信息输出到标准错误（stderr），并将 ok 设置为 false。
+ */
 bool HandleDumpCommand(Env* env, char** files, int num) {
   StdoutPrinter printer;
   bool ok = true;
