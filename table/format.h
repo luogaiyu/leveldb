@@ -11,7 +11,18 @@
 #include "leveldb/slice.h"
 #include "leveldb/status.h"
 #include "leveldb/table_builder.h"
+/**
+ * 
+format.h 文件定义了 BlockHandle 和 Footer 类，以及 ReadBlock 函数的声明。这些类和函数用于管理和解析 SSTable 文件中的块和元数据。主要功能包括：
 
+BlockHandle：表示文件中数据块或元数据块的位置，提供编码和解码方法。
+Footer：表示 SSTable 文件末尾的固定信息，包含元索引块和索引块的 BlockHandle，提供编码和解码方法。
+ReadBlock：从文件中读取指定的块，解压（如果需要）并返回块的内容。
+这些类和函数确保了 LevelDB 能够高效地管理和访问 SSTable 文件中的数据。
+
+引用
+
+ */
 namespace leveldb {
 
 class Block;

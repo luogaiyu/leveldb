@@ -10,7 +10,9 @@
 namespace leveldb {
 
 struct ReadOptions;
-
+/**
+ * leveldb/table/two_level_iterator.cc 文件实现了 TwoLevelIterator 类，这是一个两层迭代器，用于遍历索引块和数据块。主要方法包括 Seek、SeekToFirst、SeekToLast、Next 和 Prev，用于导航迭代器。辅助方法 SkipEmptyDataBlocksForward 和 SkipEmptyDataBlocksBackward 用于跳过空的数据块。InitDataBlock 方法用于初始化数据块。NewTwoLevelIterator 函数用于创建一个新的 TwoLevelIterator 对象。这些方法和函数确保了 LevelDB 能够高效地管理和使用两层迭代器。
+ */
 // Return a new two level iterator.  A two-level iterator contains an
 // index iterator whose values point to a sequence of blocks where
 // each block is itself a sequence of key,value pairs.  The returned

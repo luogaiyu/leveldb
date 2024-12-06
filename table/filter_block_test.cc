@@ -14,7 +14,7 @@
 namespace leveldb {
 
 // For testing: emit an array with one hash value per key
-class TestHashFilter : public FilterPolicy {
+class TestHashFilter : public FilterPolicy {// 测试过滤器
  public:
   const char* Name() const override { return "TestHashFilter"; }
 

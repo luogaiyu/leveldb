@@ -4,7 +4,9 @@
 
 #ifndef STORAGE_LEVELDB_PORT_PORT_CONFIG_H_
 #define STORAGE_LEVELDB_PORT_PORT_CONFIG_H_
-
+/**
+ * 判断当前系统存在哪些库?
+ */
 // Define to 1 if you have a definition for fdatasync() in <unistd.h>.
 #if !defined(HAVE_FDATASYNC)
 #cmakedefine01 HAVE_FDATASYNC

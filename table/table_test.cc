@@ -297,7 +297,11 @@ class KeyConvertingIterator : public Iterator {
   mutable Status status_;
   Iterator* iter_;
 };
-
+/**
+ * MemTableConstructor 类继承自 Constructor，用于构建内存表。
+FinishImpl 方法将键值对添加到内存表中。
+NewIterator 方法返回内存表的迭代器。
+ */
 class MemTableConstructor : public Constructor {
  public:
   explicit MemTableConstructor(const Comparator* cmp)
@@ -325,7 +329,12 @@ class MemTableConstructor : public Constructor {
   const InternalKeyComparator internal_comparator_;
   MemTable* memtable_;
 };
-
+/**
+ * DBConstructor 类继承自 Constructor，用于构建数据库。
+FinishImpl 方法将键值对写入数据库。
+NewIterator 方法返回数据库的迭代器。
+NewDB 方法创建一个新的数据库实例。
+ */
 class DBConstructor : public Constructor {
  public:
   explicit DBConstructor(const Comparator* cmp)

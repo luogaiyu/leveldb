@@ -12,7 +12,30 @@
 namespace leveldb {
 
 namespace {
-
+/**
+ * TwoLevelIterator 类继承自 Iterator，用于实现两层迭代器。
+BlockFunction 类型别名，表示一个函数指针，用于创建块迭代器。
+公共方法：
+构造函数和析构函数。
+Seek、SeekToFirst、SeekToLast、Next 和 Prev 方法用于导航迭代器。
+Valid 方法检查迭代器是否有效。
+key 和 value 方法返回当前键和值。
+status 方法返回迭代器的状态。
+私有方法：
+SaveError 方法保存错误状态。
+SkipEmptyDataBlocksForward 和 SkipEmptyDataBlocksBackward 方法跳过空的数据块。
+SetDataIterator 方法设置数据迭代器。
+InitDataBlock 方法初始化数据块。
+私有成员变量：
+block_function_：块函数指针。
+arg_：传递给块函数的参数。
+options_：读取选项。
+status_：迭代器的状态。
+index_iter_：索引迭代器。
+data_iter_：数据迭代器。
+data_block_handle_：当前数据块的句柄。
+ * 
+ */
 typedef Iterator* (*BlockFunction)(void*, const ReadOptions&, const Slice&);
 
 class TwoLevelIterator : public Iterator {

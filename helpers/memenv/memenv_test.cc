@@ -23,7 +23,7 @@ class MemEnvTest : public testing::Test {
   Env* env_;
 };
 
-TEST_F(MemEnvTest, Basics) {
+TEST_F(MemEnvTest, Basics) {// 主要是测试文件系统的操作
   uint64_t file_size;
   WritableFile* writable_file;
   std::vector<std::string> children;
@@ -91,7 +91,7 @@ TEST_F(MemEnvTest, Basics) {
   ASSERT_LEVELDB_OK(env_->RemoveDir("/dir"));
 }
 
-TEST_F(MemEnvTest, ReadWrite) {
+TEST_F(MemEnvTest, ReadWrite) {// 测试文件的读写操作。
   WritableFile* writable_file;
   SequentialFile* seq_file;
   RandomAccessFile* rand_file;
@@ -134,7 +134,7 @@ TEST_F(MemEnvTest, ReadWrite) {
   delete rand_file;
 }
 
-TEST_F(MemEnvTest, Locks) {
+TEST_F(MemEnvTest, Locks) {// 测试文件锁操作。
   FileLock* lock;
 
   // These are no-ops, but we test they return success.
@@ -142,7 +142,7 @@ TEST_F(MemEnvTest, Locks) {
   ASSERT_LEVELDB_OK(env_->UnlockFile(lock));
 }
 
-TEST_F(MemEnvTest, Misc) {
+TEST_F(MemEnvTest, Misc) {// 测试其他一些操作
   std::string test_dir;
   ASSERT_LEVELDB_OK(env_->GetTestDirectory(&test_dir));
   ASSERT_TRUE(!test_dir.empty());
@@ -157,7 +157,7 @@ TEST_F(MemEnvTest, Misc) {
   delete writable_file;
 }
 
-TEST_F(MemEnvTest, LargeWrite) {
+TEST_F(MemEnvTest, LargeWrite) {// 测试大文件的写入操作。
   const size_t kWriteSize = 300 * 1024;
   char* scratch = new char[kWriteSize * 2];
 
@@ -190,7 +190,7 @@ TEST_F(MemEnvTest, LargeWrite) {
   delete[] scratch;
 }
 
-TEST_F(MemEnvTest, OverwriteOpenFile) {
+TEST_F(MemEnvTest, OverwriteOpenFile) {// 测试覆盖已打开文件的操作。
   const char kWrite1Data[] = "Write #1 data";
   const size_t kFileDataLen = sizeof(kWrite1Data) - 1;
   const std::string kTestFileName = testing::TempDir() + "leveldb-TestFile.dat";
@@ -213,7 +213,7 @@ TEST_F(MemEnvTest, OverwriteOpenFile) {
   delete rand_file;
 }
 
-TEST_F(MemEnvTest, DBTest) {
+TEST_F(MemEnvTest, DBTest) {// 测试使用 MemEnv 的 LevelDB 数据库操作
   Options options;
   options.create_if_missing = true;
   options.env = env_;

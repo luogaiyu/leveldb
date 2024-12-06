@@ -16,8 +16,19 @@
 #include "util/coding.h"
 
 namespace leveldb {
+/**
+ * Table::Rep 结构体用于存储 Table 的内部状态。
+析构函数负责释放资源。
+options 存储选项。
+status 存储状态。
+file 指向随机访问文件。
+cache_id 是缓存的唯一标识符。
+filter 和 filter_data 用于过滤块。
+metaindex_handle 存储元索引块的句柄。
+index_block 存储索引块。
 
-struct Table::Rep {
+ */
+struct Table::Rep {// Table::Rep 结构体
   ~Rep() {
     delete filter;
     delete[] filter_data;
@@ -34,7 +45,12 @@ struct Table::Rep {
   BlockHandle metaindex_handle;  // Handle to metaindex_block: saved from footer
   Block* index_block;
 };
-
+/**
+ * Table::ReadMeta 方法用于读取元信息块。
+检查是否有过滤策略。
+读取元索引块。
+查找过滤块的键并读取过滤块。
+ */
 Status Table::Open(const Options& options, RandomAccessFile* file,
                    uint64_t size, Table** table) {
   *table = nullptr;
@@ -210,7 +226,14 @@ Iterator* Table::NewIterator(const ReadOptions& options) const {
       rep_->index_block->NewIterator(rep_->options.comparator),
       &Table::BlockReader, const_cast<Table*>(this), options);
 }
-
+/**
+ * 
+Table::InternalGet 方法用于获取键的值。
+创建索引块的迭代器并查找键。
+如果存在过滤块，检查键是否可能匹配。
+读取块并查找键。
+调用 handle_result 回调函数处理结果。
+ */
 Status Table::InternalGet(const ReadOptions& options, const Slice& k, void* arg,
                           void (*handle_result)(void*, const Slice&,
                                                 const Slice&)) {
@@ -240,7 +263,13 @@ Status Table::InternalGet(const ReadOptions& options, const Slice& k, void* arg,
   delete iiter;
   return s;
 }
-
+/**
+ * 
+Table::ApproximateOffsetOf 方法用于获取键的近似偏移量。
+创建索引块的迭代器并查找键。
+如果找到键，解码块的句柄并返回其偏移量。
+如果未找到键，返回元索引块的偏移量。
+ */
 uint64_t Table::ApproximateOffsetOf(const Slice& key) const {
   Iterator* index_iter =
       rep_->index_block->NewIterator(rep_->options.comparator);

@@ -7,7 +7,15 @@
 
 #include "leveldb/iterator.h"
 #include "leveldb/slice.h"
+/**
+ 
+iterator_wrapper.h 文件定义了 IteratorWrapper 类，这是一个内部包装类，提供了与 Iterator 类似的接口，但缓存了 Valid 和 Key 的结果。主要功能包括：
 
+构造和析构：提供默认构造函数、带参数的构造函数和析构函数，管理内部 Iterator 对象的生命周期。
+设置迭代器：Set 方法用于设置内部 Iterator 对象，并更新状态。
+迭代器接口方法：提供 Valid、Key、Value、Status、Next、Prev、Seek、SeekToFirst 和 SeekToLast 方法，与 Iterator 接口一致。
+状态更新：Update 方法用于更新 valid_ 和 key_，确保缓存的状态与内部 Iterator 一致。
+ */
 namespace leveldb {
 
 // A internal wrapper class with an interface similar to Iterator that

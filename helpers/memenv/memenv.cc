@@ -15,11 +15,21 @@
 #include "port/port.h"
 #include "port/thread_annotations.h"
 #include "util/mutexlock.h"
-
+/**
+ * 这段代码实现了一个完全在内存中运行的文件系统模拟 InMemoryEnv，用于测试和调试 LevelDB 的文件操作。通过 FileState 类管理文件状态，SequentialFileImpl、RandomAccessFileImpl 和 WritableFileImpl 类实现不同的文件操作接口，InMemoryEnv 类则实现了 Env 接口的方法，提供了一个完整的内存文件系统。
+ */
 namespace leveldb {
 
 namespace {
-
+/**
+ * 
+FileState 类表示一个文件的状态，包括文件的引用计数、大小和数据块。
+Ref 和 Unref 方法用于增加和减少引用计数，当引用计数为零时删除对象。
+Size 方法返回文件的大小。
+Truncate 方法清空文件内容。
+Read 方法从文件中读取数据。
+Append 方法向文件中追加数据。
+ */
 class FileState {
  public:
   // FileStates are reference counted. The initial reference count is zero
@@ -148,7 +158,12 @@ class FileState {
   std::vector<char*> blocks_ GUARDED_BY(blocks_mutex_);
   uint64_t size_ GUARDED_BY(blocks_mutex_);
 };
-
+/**
+ * 
+ * SequentialFileImpl 实现了 SequentialFile 接口，用于顺序读取文件。
+RandomAccessFileImpl 实现了 RandomAccessFile 接口，用于随机访问文件。
+WritableFileImpl 实现了 WritableFile 接口，用于写入文件。
+ */
 class SequentialFileImpl : public SequentialFile {
  public:
   explicit SequentialFileImpl(FileState* file) : file_(file), pos_(0) {
@@ -212,12 +227,25 @@ class WritableFileImpl : public WritableFile {
  private:
   FileState* file_;
 };
-
+// NoOpLogger 是一个空的日志记录器，不执行任何操作。
 class NoOpLogger : public Logger {
  public:
   void Logv(const char* format, std::va_list ap) override {}
 };
-
+/**
+ * 
+InMemoryEnv 类继承自 EnvWrapper，实现了 Env 接口的方法。
+NewSequentialFile、NewRandomAccessFile、NewWritableFile 和 NewAppendableFile 方法分别创建不同类型的文件对象。
+FileExists 方法检查文件是否存在。
+GetChildren 方法获取指定目录下的文件列表。
+RemoveFile 方法删除文件。
+CreateDir 和 RemoveDir 方法是空操作，因为内存环境不支持目录操作。
+GetFileSize 方法获取文件的大小。
+RenameFile 方法重命名文件。
+LockFile 和 UnlockFile 方法是空操作，因为内存环境不支持文件锁。
+GetTestDirectory 方法返回一个测试目录。
+NewLogger 方法创建一个空的日志记录器。
+ */
 class InMemoryEnv : public EnvWrapper {
  public:
   explicit InMemoryEnv(Env* base_env) : EnvWrapper(base_env) {}

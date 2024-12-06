@@ -36,14 +36,24 @@
 #include "util/coding.h"
 
 namespace leveldb {
+  /**
+   * 
+    BlockBuilder 类的主要成员变量和方法：
+    options_：存储选项，包括块重启间隔等。
+    restarts_：存储重启点的偏移量。
+    buffer_：存储块的数据。
+    counter_：记录当前块中添加的键值对数量。
+    finished_：表示块是否已经完成。
+    last_key_：存储上一个键，用于前缀压缩。
+   */
 
 BlockBuilder::BlockBuilder(const Options* options)
-    : options_(options), restarts_(), counter_(0), finished_(false) {
+    : options_(options), restarts_(), counter_(0), finished_(false) { // 前向声明 Options 结构体，表示 LevelDB 的选项配置。
   assert(options->block_restart_interval >= 1);
   restarts_.push_back(0);  // First restart point is at offset 0
 }
 
-void BlockBuilder::Reset() {
+void BlockBuilder::Reset() {// 重置 BlockBuilder 对象，清空所有状态。
   buffer_.clear();
   restarts_.clear();
   restarts_.push_back(0);  // First restart point is at offset 0
@@ -52,7 +62,8 @@ void BlockBuilder::Reset() {
   last_key_.clear();
 }
 
-size_t BlockBuilder::CurrentSizeEstimate() const {
+size_t BlockBuilder::CurrentSizeEstimate() const {// 当前大小估计
+
   return (buffer_.size() +                       // Raw data buffer
           restarts_.size() * sizeof(uint32_t) +  // Restart array
           sizeof(uint32_t));                     // Restart array length
@@ -67,7 +78,15 @@ Slice BlockBuilder::Finish() {
   finished_ = true;
   return Slice(buffer_);
 }
-
+/**
+ * 
+添加键值对到块中。
+计算当前键与上一个键的共享前缀长度。
+如果达到重启间隔，则添加一个新的重启点。
+将共享前缀长度、非共享部分长度和值长度编码到缓冲区。
+将键的非共享部分和值附加到缓冲区。
+更新状态，包括 last_key_ 和 counter_。
+ */
 void BlockBuilder::Add(const Slice& key, const Slice& value) {
   Slice last_key_piece(last_key_);
   assert(!finished_);

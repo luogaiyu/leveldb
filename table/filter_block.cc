@@ -14,7 +14,17 @@ namespace leveldb {
 // Generate new filter every 2KB of data
 static const size_t kFilterBaseLg = 11;
 static const size_t kFilterBase = 1 << kFilterBaseLg;
-
+/**
+ * 
+ * 
+ 创建一个 FilterBlockBuilder 对象，使用 policy_ 作为过滤器策略。
+调用 StartBlock 方法开始一个新的块，块的起始位置为 100。
+添加多个键值对到块中。
+再次调用 StartBlock 方法开始一个新的块，块的起始位置为 200 和 300。
+调用 Finish 方法生成过滤块。
+创建一个 FilterBlockReader 对象，使用生成的块和 policy_。
+断言 KeyMayMatch 方法返回 true 或 false，根据键是否存在于块中。
+ */
 FilterBlockBuilder::FilterBlockBuilder(const FilterPolicy* policy)
     : policy_(policy) {}
 
@@ -47,7 +57,14 @@ Slice FilterBlockBuilder::Finish() {
   result_.push_back(kFilterBaseLg);  // Save encoding parameter in result
   return Slice(result_);
 }
-
+/**
+ * 
+创建一个 FilterBlockBuilder 对象，使用 policy_ 作为过滤器策略。
+调用 Finish 方法生成过滤块。
+使用 EscapeString 函数将块内容转换为可读的字符串形式，并断言其内容。
+创建一个 FilterBlockReader 对象，使用生成的块和 policy_。
+断言 KeyMayMatch 方法返回 true，即使块为空。
+ */
 void FilterBlockBuilder::GenerateFilter() {
   const size_t num_keys = start_.size();
   if (num_keys == 0) {
@@ -86,7 +103,14 @@ FilterBlockReader::FilterBlockReader(const FilterPolicy* policy,
   offset_ = data_ + last_word;
   num_ = (n - 5 - last_word) / 4;
 }
+/**
+ * 创建一个 FilterBlockBuilder 对象，使用 policy_ 作为过滤器策略。
+分别创建多个块，每个块包含不同的键值对。
+调用 Finish 方法生成过滤块。
+创建一个 FilterBlockReader 对象，使用生成的块和 policy_。
+分别检查每个块中的键是否匹配，断言 KeyMayMatch 方法返回 true 或 false，根据键是否存在于相应的块中。
 
+ */
 bool FilterBlockReader::KeyMayMatch(uint64_t block_offset, const Slice& key) {
   uint64_t index = block_offset >> base_lg_;
   if (index < num_) {
