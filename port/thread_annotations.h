@@ -84,9 +84,11 @@
 #define SHARED_TRYLOCK_FUNCTION(...) \
   THREAD_ANNOTATION_ATTRIBUTE__(shared_trylock_function(__VA_ARGS__))
 #endif
-
+// ... 表示可变长参数, 可以展开任意数量的宏
+// __VA_ARGS__: 表示展开所有的参数
+// unlock_function 能够提醒编译器 这个位置做了 解锁操作 进行优化
 #ifndef UNLOCK_FUNCTION
-#define UNLOCK_FUNCTION(...) \
+#define UNLOCK_FUNCTION(...) \ 
   THREAD_ANNOTATION_ATTRIBUTE__(unlock_function(__VA_ARGS__))
 #endif
 

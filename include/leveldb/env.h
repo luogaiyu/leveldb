@@ -49,29 +49,35 @@ Env 是一个操作系统抽象接口，允许用户通过自定义实现来替�
 支持覆盖部分功能，通过 EnvWrapper 类代理调用目标 Env 实现。
  */
 namespace leveldb {
-
-class FileLock;
-class Logger;
-class RandomAccessFile;
-class SequentialFile;
-class Slice;
-class WritableFile;
+// 使用前置声明 来减少编译时间 和编译错误
+// 前置声明的作用是 减少 编译依赖, 2. 提高代码组织性 3. 避免循环依赖
+class FileLock;// 用于文件锁定, 防止多个进程同时访问同一个文件
+class Logger; // 用于日志记录, 记录系统运行时的信息
+class RandomAccessFile; // 用于任意访问文件
+class SequentialFile; // 用于顺序读取文件
+class Slice;// 用于表示字符串片段, 常用于高效的数据处理
+class WritableFile;// 用于写入文件, 可以创建新文件或追加到现有文件
 
 class LEVELDB_EXPORT Env {
  public:
   Env();
+/**
+ * 禁用构造函数和赋值操作符 的原因
+ * 1. 保持对象的唯一性
+ * 2. 避免浅拷贝带来的问题, 避免 双重删除或悬空指针, 双重删除: 相当于 对某个指针指向的区域进行两次删除, 悬空指针 指的是 会导致未定义行为, 会导致程序崩溃或数据损坏
+ * 3. 本质上就是单例模式的设计模式
+ */
+  Env(const Env&) = delete;// 禁用拷贝构造函数 todo: 这里还需要check下
+  Env& operator=(const Env&) = delete;// 禁用 赋值操作符
 
-  Env(const Env&) = delete;
-  Env& operator=(const Env&) = delete;
-
-  virtual ~Env();
+  virtual ~Env();// 使用虚函数关键字 相当于有一个钩子, 能够在删除 基类的时候, 调用后续基于实现类的方法来一起删除, 如果不这么声明的话, 就可能只会调用基类的析构函数, 导致实现类会有一些资源没有被释放
 
   // Return a default environment suitable for the current operating
   // system.  Sophisticated users may wish to provide their own Env
   // implementation instead of relying on this default environment.
   //
   // The result of Default() belongs to leveldb and must never be deleted.
-  static Env* Default();
+  static Env* Default();// static 通过类名可以直接调用这个静态的方法
 
   // Create an object that sequentially reads the file with the specified name.
   // On success, stores a pointer to the new file in *result and returns OK.
@@ -80,6 +86,8 @@ class LEVELDB_EXPORT Env {
   // NotFound status when the file does not exist.
   //
   // The returned file will only be accessed by one thread at a time.
+  // =0: 表示这个函数是纯虚函数
+  // SequentialFile: 表示这个是一个指向指针的指针
   virtual Status NewSequentialFile(const std::string& fname,
                                    SequentialFile** result) = 0;
 
@@ -148,6 +156,8 @@ class LEVELDB_EXPORT Env {
   virtual Status DeleteFile(const std::string& fname);
 
   // Create the specified directory.
+
+  // =0: 标识这个函数是纯虚数函数 本质上就是抽象类中的方法
   virtual Status CreateDir(const std::string& dirname) = 0;
 
   // Delete the specified directory.
@@ -204,7 +214,7 @@ class LEVELDB_EXPORT Env {
   // added to the same Env may run concurrently in different threads.
   // I.e., the caller may not assume that background work items are
   // serialized.
-  virtual void Schedule(void (*function)(void* arg), void* arg) = 0;
+  virtual void Schedule(void (*function)(void* arg), void* arg) = 0;// 表示可以灵活调度各种任务, 这些任务由传入的函数参数和指针来定义
 
   // Start a new thread, invoking "function(arg)" within the new thread.
   // When "function(arg)" returns, the thread will be destroyed.
@@ -260,6 +270,7 @@ class LEVELDB_EXPORT SequentialFile {
 // A file abstraction for randomly reading the contents of a file.
 class LEVELDB_EXPORT RandomAccessFile {
  public:
+ // 表示 使用默认构造函数
   RandomAccessFile() = default;
 
   RandomAccessFile(const RandomAccessFile&) = delete;
@@ -267,22 +278,12 @@ class LEVELDB_EXPORT RandomAccessFile {
 
   virtual ~RandomAccessFile();
 
-  // Read up to "n" bytes from the file starting at "offset".
-  // "scratch[0..n-1]" may be written by this routine.  Sets "*result"
-  // to the data that was read (including if fewer than "n" bytes were
-  // successfully read).  May set "*result" to point at data in
-  // "scratch[0..n-1]", so "scratch[0..n-1]" must be live when
-  // "*result" is used.  If an error was encountered, returns a non-OK
-  // status.
-  //
-  // Safe for concurrent use by multiple threads.
+// 创建 虚函数 Read
   virtual Status Read(uint64_t offset, size_t n, Slice* result,
                       char* scratch) const = 0;
 };
 
-// A file abstraction for sequential writing.  The implementation
-// must provide buffering since callers may append small fragments
-// at a time to the file.
+// 
 class LEVELDB_EXPORT WritableFile {
  public:
   WritableFile() = default;
@@ -341,14 +342,14 @@ LEVELDB_EXPORT Status ReadFileToString(Env* env, const std::string& fname,
 // An implementation of Env that forwards all calls to another Env.
 // May be useful to clients who wish to override just part of the
 // functionality of another Env.
-class LEVELDB_EXPORT EnvWrapper : public Env {
+class LEVELDB_EXPORT EnvWrapper : public Env {// 创建一个继承类
  public:
   // Initialize an EnvWrapper that delegates all calls to *t.
-  explicit EnvWrapper(Env* t) : target_(t) {}
-  virtual ~EnvWrapper();
+  explicit EnvWrapper(Env* t) : target_(t) {}// 防止隐式调用
+  virtual ~EnvWrapper();// 可以根据基类的 析构函数 来调用对应的实现类的 析构函数
 
   // Return the target to which this Env forwards all calls.
-  Env* target() const { return target_; }
+  Env* target() const { return target_; }// 使用target 来返回
 
   // The following text is boilerplate that forwards all methods to target().
   Status NewSequentialFile(const std::string& f, SequentialFile** r) override {
@@ -391,7 +392,7 @@ class LEVELDB_EXPORT EnvWrapper : public Env {
   }
   Status UnlockFile(FileLock* l) override { return target_->UnlockFile(l); }
   void Schedule(void (*f)(void*), void* a) override {
-    return target_->Schedule(f, a);
+    return target_->Schedule(f, a);// 
   }
   void StartThread(void (*f)(void*), void* a) override {
     return target_->StartThread(f, a);
@@ -408,16 +409,17 @@ class LEVELDB_EXPORT EnvWrapper : public Env {
   }
 
  private:
-  Env* target_;
+  Env* target_;// 这个是重点, 这个类相当于对原本的Env包括了一层, 目的是什么?
 };
 
 }  // namespace leveldb
 
 // This workaround can be removed when leveldb::Env::DeleteFile is removed.
 // Redefine DeleteFile if it was undefined earlier.
+// 这里是为了解决函数定义的问题
 #if defined(_WIN32) && defined(LEVELDB_DELETEFILE_UNDEFINED)
-#if defined(UNICODE)
-#define DeleteFile DeleteFileW
+#if defined(UNICODE)// 是否定义 UNICODE
+#define DeleteFile DeleteFileW // 定义 DeleteFile DeleteFileW
 #else
 #define DeleteFile DeleteFileA
 #endif  // defined(UNICODE)

@@ -47,8 +47,8 @@ const int kNumNonTableCacheFiles = 10;
 // struct 的默认是public, class的成员默认是 private
 // 我清楚了, 就是说 加了 explicit 为了防止创建的时候调用  write 方法 是传递的参数 被转换成 port::Mutex* , 防止出现debug的困难
 struct DBImpl::Writer {
-  //explicit: 用来防止隐式转换
-  explicit Writer(port::Mutex* mu)
+  //explicit: 用来防止隐式转换, 就是比如要传入特定的对象
+  explicit Writer(port::Mutex* mu) // 这里传入的是指针
       : batch(nullptr), sync(false), done(false), cv(mu) {}
 
   Status status;
@@ -58,17 +58,17 @@ struct DBImpl::Writer {
   port::CondVar cv;
 };
 
-struct DBImpl::CompactionState {
+struct DBImpl::CompactionState {// 创建合并的状态
   // Files produced by compaction
   struct Output {
     uint64_t number;
     uint64_t file_size;
-    InternalKey smallest, largest;
+    InternalKey smallest, largest;// 最大键 最小键 其实不同的对象之间的关系 应该怎么界定?
   };
 
-  Output* current_output() { return &outputs[outputs.size() - 1]; }
+  Output* current_output() { return &outputs[outputs.size() - 1]; }// 这个方法是做什么?
 
-  explicit CompactionState(Compaction* c)
+  explicit CompactionState(Compaction* c)// CompactionState 的构建函数, 这个主要是用来描述合并的过程 这个相当于构造函数
       : compaction(c),
         smallest_snapshot(0),
         outfile(nullptr),
@@ -93,34 +93,35 @@ struct DBImpl::CompactionState {
 };
 
 // Fix user-supplied options to be reasonable
-template <class T, class V>
-static void ClipToRange(T* ptr, V minvalue, V maxvalue) {
+template <class T, class V>// template 声明 是模版函数 class T class V, 
+static void ClipToRange(T* ptr, V minvalue, V maxvalue) { // T 传入的是 对象的地址, 意味着 如果对传入的信息做修改, 会直接修改到内存的地址
   if (static_cast<V>(*ptr) > maxvalue) *ptr = maxvalue;
   if (static_cast<V>(*ptr) < minvalue) *ptr = minvalue;
 }
 Options SanitizeOptions(const std::string& dbname,
                         const InternalKeyComparator* icmp,
                         const InternalFilterPolicy* ipolicy,
-                        const Options& src) {
+                        const Options& src) {// 相当于 对传入的Option 做标准化, 使用模版类的方式
+ // 首先传入 需要标准化的 result
   Options result = src;
   result.comparator = icmp;
-  result.filter_policy = (src.filter_policy != nullptr) ? ipolicy : nullptr;
+  result.filter_policy = (src.filter_policy != nullptr) ? ipolicy : nullptr;// 设置过滤策略
   ClipToRange(&result.max_open_files, 64 + kNumNonTableCacheFiles, 50000);
-  ClipToRange(&result.write_buffer_size, 64 << 10, 1 << 30);
-  ClipToRange(&result.max_file_size, 1 << 20, 1 << 30);
-  ClipToRange(&result.block_size, 1 << 10, 4 << 20);
+  ClipToRange(&result.write_buffer_size, 64 << 10, 1 << 30);// 限制 write的缓存的大小
+  ClipToRange(&result.max_file_size, 1 << 20, 1 << 30); // 限制 最大文件的大小
+  ClipToRange(&result.block_size, 1 << 10, 4 << 20); // 限制  block 的大小
   if (result.info_log == nullptr) {
     // Open a log file in the same directory as the db
     src.env->CreateDir(dbname);  // In case it does not exist
-    src.env->RenameFile(InfoLogFileName(dbname), OldInfoLogFileName(dbname));
-    Status s = src.env->NewLogger(InfoLogFileName(dbname), &result.info_log);
+    src.env->RenameFile(InfoLogFileName(dbname), OldInfoLogFileName(dbname));// 删除文件 
+    Status s = src.env->NewLogger(InfoLogFileName(dbname), &result.info_log);// 创建新的日志
     if (!s.ok()) {
       // No place suitable for logging
       result.info_log = nullptr;
     }
   }
   if (result.block_cache == nullptr) {
-    result.block_cache = NewLRUCache(8 << 20);
+    result.block_cache = NewLRUCache(8 << 20);// 8 << 20 表示将数字 8 左移 20 位。左移运算符 << 的效果是将二进制表示的数字向左移动指定的位数，并在右侧补 0。每左移一位相当于乘以 2，因此 8 << 20 实际上等于 8 * 2^20
   }
   return result;
 }
@@ -159,9 +160,9 @@ DBImpl::DBImpl(const Options& raw_options, const std::string& dbname)
 DBImpl::~DBImpl() {
   // Wait for background work to finish.
   mutex_.Lock();
-  shutting_down_.store(true, std::memory_order_release);
+  shutting_down_.store(true, std::memory_order_release);// 保证 所有之前的写操作对其他线程可见
   while (background_compaction_scheduled_) {
-    background_work_finished_signal_.Wait();
+    background_work_finished_signal_.Wait();// 一个循环中等待, 直到所有后台压缩任务完成
   }
   mutex_.Unlock();
 
@@ -188,8 +189,8 @@ DBImpl::~DBImpl() {
 Status DBImpl::NewDB() {
   VersionEdit new_db;
   new_db.SetComparatorName(user_comparator()->Name());
-  new_db.SetLogNumber(0);
-  new_db.SetNextFile(2);
+  new_db.SetLogNumber(0);// 设置日志编号为 0 表示没有日志文件
+  new_db.SetNextFile(2); // 设置下一个文件编号 为2, 表示下一个可用的文件编号
   new_db.SetLastSequence(0);
 
   const std::string manifest = DescriptorFileName(dbname_, 1);
@@ -1243,7 +1244,7 @@ Status DBImpl::Write(const WriteOptions& options, WriteBatch* updates) {
 //
   writers_.push_back(&w);
   while (!w.done && &w != writers_.front()) {
-    w.cv.Wait();
+    w.cv.Wait();// 多线程写入, 加锁 写出
   }
   if (w.done) {
     return w.status;
@@ -1251,7 +1252,7 @@ Status DBImpl::Write(const WriteOptions& options, WriteBatch* updates) {
 //-------------------------------------------------------
 
   // May temporarily unlock and wait.
-  Status status = MakeRoomForWrite(updates == nullptr);
+  Status status = MakeRoomForWrite(updates == nullptr);// 为写操作 腾出压缩
   uint64_t last_sequence = versions_->LastSequence();
   Writer* last_writer = &w;
   if (status.ok() && updates != nullptr) {  // nullptr batch is for compactions
@@ -1265,16 +1266,16 @@ Status DBImpl::Write(const WriteOptions& options, WriteBatch* updates) {
     // into mem_.
     {
       mutex_.Unlock();
-      status = log_->AddRecord(WriteBatchInternal::Contents(write_batch));
+      status = log_->AddRecord(WriteBatchInternal::Contents(write_batch));// 写入日志文件
       bool sync_error = false;
       if (status.ok() && options.sync) {
-        status = logfile_->Sync();
+        status = logfile_->Sync();// 同步日志文件?
         if (!status.ok()) {
           sync_error = true;
         }
       }
       if (status.ok()) {
-        status = WriteBatchInternal::InsertInto(write_batch, mem_);
+        status = WriteBatchInternal::InsertInto(write_batch, mem_);// 然后把对应的数据 写入到内存中
       }
       mutex_.Lock();
       if (sync_error) {

@@ -9,23 +9,24 @@
 跨平台支持：同时支持 Windows 和非 Windows 平台的动态库导出。
 静态库兼容：在非动态库编译时，LEVELDB_EXPORT 定义为空。
  */
+// 宏指的是 在预编译器时对 代码先进行文本替换操作, 然后再进入编译器做编译
 #ifndef STORAGE_LEVELDB_INCLUDE_EXPORT_H_
 #define STORAGE_LEVELDB_INCLUDE_EXPORT_H_
 
-#if !defined(LEVELDB_EXPORT)
+#if !defined(LEVELDB_EXPORT)// 判断 是否定义 LEVELDB_EXPORT
 
-#if defined(LEVELDB_SHARED_LIBRARY)
-#if defined(_WIN32)
+#if defined(LEVELDB_SHARED_LIBRARY)// 标识 是否编译动态库,就是指的 leveldb
+#if defined(_WIN32) // 如果 是Windows 系统
 
-#if defined(LEVELDB_COMPILE_LIBRARY)
-#define LEVELDB_EXPORT __declspec(dllexport)
+#if defined(LEVELDB_COMPILE_LIBRARY) // 
+#define LEVELDB_EXPORT __declspec(dllexport) // dllexport是 C++编译器的一个重要的关键字
 #else
 #define LEVELDB_EXPORT __declspec(dllimport)
 #endif  // defined(LEVELDB_COMPILE_LIBRARY)
 
 #else  // defined(_WIN32)
 #if defined(LEVELDB_COMPILE_LIBRARY)
-#define LEVELDB_EXPORT __attribute__((visibility("default")))
+#define LEVELDB_EXPORT __attribute__((visibility("default")))// 来控制 当前的代码能够在 ddl库中可见
 #else
 #define LEVELDB_EXPORT
 #endif

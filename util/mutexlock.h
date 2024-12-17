@@ -23,10 +23,10 @@ namespace leveldb {
 class SCOPED_LOCKABLE MutexLock {// SCOPED_LOCKABLE 这个是一个注解, 这个是一个范围锁
  public:
   explicit MutexLock(port::Mutex* mu) EXCLUSIVE_LOCK_FUNCTION(mu) : mu_(mu) {
-    this->mu_->Lock();
+    this->mu_->Lock();// 
   }
   ~MutexLock() UNLOCK_FUNCTION() { this->mu_->Unlock(); }
-
+  // 
   MutexLock(const MutexLock&) = delete;
   MutexLock& operator=(const MutexLock&) = delete;
 

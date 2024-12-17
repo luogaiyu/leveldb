@@ -40,7 +40,7 @@ TEST_F(MemEnvTest, Basics) {// 主要是测试文件系统的操作
   ASSERT_LEVELDB_OK(env_->NewWritableFile("/dir/f", &writable_file));
   ASSERT_LEVELDB_OK(env_->GetFileSize("/dir/f", &file_size));
   ASSERT_EQ(0, file_size);
-  delete writable_file;
+  delete writable_file;// 防止 出现内存泄漏
 
   // Check that the file exists.
   ASSERT_TRUE(env_->FileExists("/dir/f"));

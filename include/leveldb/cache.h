@@ -44,8 +44,10 @@ LEVELDB_EXPORT Cache* NewLRUCache(size_t capacity);
 
 class LEVELDB_EXPORT Cache {
  public:
-  Cache() = default;
-
+  Cache() = default;// 使用默认的构建的方法
+/**
+ * 数据
+ */
   Cache(const Cache&) = delete;
   Cache& operator=(const Cache&) = delete;
 
@@ -54,7 +56,7 @@ class LEVELDB_EXPORT Cache {
   virtual ~Cache();
 
   // Opaque handle to an entry stored in the cache.
-  struct Handle {};
+  struct Handle {};// 表示缓存中的条目
 
   // Insert a mapping from key->value into the cache and assign it
   // the specified charge against the total cache capacity.
@@ -73,23 +75,23 @@ class LEVELDB_EXPORT Cache {
   // Else return a handle that corresponds to the mapping.  The caller
   // must call this->Release(handle) when the returned mapping is no
   // longer needed.
-  virtual Handle* Lookup(const Slice& key) = 0;
+  virtual Handle* Lookup(const Slice& key) = 0;// 查找对应的键是否存在
 
   // Release a mapping returned by a previous Lookup().
   // REQUIRES: handle must not have been released yet.
   // REQUIRES: handle must have been returned by a method on *this.
-  virtual void Release(Handle* handle) = 0;
+  virtual void Release(Handle* handle) = 0;// 释放句柄
 
   // Return the value encapsulated in a handle returned by a
   // successful Lookup().
   // REQUIRES: handle must not have been released yet.
   // REQUIRES: handle must have been returned by a method on *this.
-  virtual void* Value(Handle* handle) = 0;
+  virtual void* Value(Handle* handle) = 0;// 获取句柄的值
 
   // If the cache contains entry for key, erase it.  Note that the
   // underlying entry will be kept around until all existing handles
   // to it have been released.
-  virtual void Erase(const Slice& key) = 0;
+  virtual void Erase(const Slice& key) = 0;// 从缓存中删除指定的键
 
   // Return a new numeric id.  May be used by multiple clients who are
   // sharing the same cache to partition the key space.  Typically the
@@ -102,11 +104,11 @@ class LEVELDB_EXPORT Cache {
   // Default implementation of Prune() does nothing.  Subclasses are strongly
   // encouraged to override the default implementation.  A future release of
   // leveldb may change Prune() to a pure abstract method.
-  virtual void Prune() {}
+  virtual void Prune() {}// 清楚不活跃的条目
 
   // Return an estimate of the combined charges of all elements stored in the
   // cache.
-  virtual size_t TotalCharge() const = 0;
+  virtual size_t TotalCharge() const = 0;// 返回总权重
 };
 
 }  // namespace leveldb
