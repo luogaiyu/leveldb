@@ -202,7 +202,7 @@ struct SkipList<Key, Comparator>::Node {
     assert(n >= 0);
     // Use an 'acquire load' so that we observe a fully initialized
     // version of the returned Node.
-    return next_[n].load(std::memory_order_acquire);
+    return next_[n].load(std::memory_order_acquire);// 表示所有写操作都在更新指针前执行完
   }
   void SetNext(int n, Node* x) {
     assert(n >= 0);

@@ -26,7 +26,7 @@ MemTable::~MemTable() { assert(refs_ == 0); }// 如果想要调用析构函数�
 size_t MemTable::ApproximateMemoryUsage() { return arena_.MemoryUsage(); } // 返回当前内存的使用估计量
 
 int MemTable::KeyComparator::operator()(const char* aptr,
-                                        const char* bptr) const {
+                                        const char* bptr) const {// 比较器
   // Internal keys are encoded as length-prefixed strings.
   Slice a = GetLengthPrefixedSlice(aptr);
   Slice b = GetLengthPrefixedSlice(bptr);
@@ -105,7 +105,7 @@ void MemTable::Add(SequenceNumber s, ValueType type, const Slice& key,
   table_.Insert(buf); // 这里还是使用跳表来进行存储, 使用跳表来组织结构
 }
 
-bool MemTable::Get(const LookupKey& key, std::string* value, Status* s) {
+bool MemTable::Get(const LookupKey& key, std::string* value, Status* s) {// Memtable 的get 方法, 相当于内存进行了一层缓存
   Slice memkey = key.memtable_key();
   Table::Iterator iter(&table_);
   iter.Seek(memkey.data());

@@ -399,27 +399,28 @@ Status Version::Get(const ReadOptions& options, const LookupKey& k,
   return state.found ? state.s : Status::NotFound(Slice());
 }
 
-bool Version::UpdateStats(const GetStats& stats) {
-  FileMetaData* f = stats.seek_file;
-  if (f != nullptr) {
-    f->allowed_seeks--;
-    if (f->allowed_seeks <= 0 && file_to_compact_ == nullptr) {
+bool Version::UpdateStats(const GetStats& stats) {// 
+  FileMetaData* f = stats.seek_file;// 获取 文件元数据
+  if (f != nullptr) { 
+    f->allowed_seeks--;//减少允许的查找次数
+    if (f->allowed_seeks <= 0 && file_to_compact_ == nullptr) {// 查看当前是否允许被压缩
       file_to_compact_ = f;
-      file_to_compact_level_ = stats.seek_file_level;
+      file_to_compact_level_ = stats.seek_file_level;// 表示当前没有其他文件需要压缩
       return true;
     }
   }
   return false;
 }
 
-bool Version::RecordReadSample(Slice internal_key) {
+bool Version::RecordReadSample(Slice internal_key) { // 记录 读取采样并决定是否需要更新统计信息
   ParsedInternalKey ikey;
+  // 调用 ParseInternalKey 方法, 解析internal_key, 并将结果存储在 ikey
   if (!ParseInternalKey(internal_key, &ikey)) {
     return false;
   }
 
   struct State {
-    GetStats stats;  // Holds first matching file
+    GetStats stats;  // 保存第一个匹配的文件
     int matches;
 
     static bool Match(void* arg, int level, FileMetaData* f) {
@@ -437,7 +438,7 @@ bool Version::RecordReadSample(Slice internal_key) {
 
   State state;
   state.matches = 0;
-  ForEachOverlapping(ikey.user_key, internal_key, &state, &State::Match);
+  ForEachOverlapping(ikey.user_key, internal_key, &state, &State::Match);// ForEachOverlapping 方法的作用是遍历所有可能包含 user_key 的文件，并调用回调函数 match 处理每个匹配的文件。
 
   // Must have at least two matches since we want to merge across
   // files. But what if we have a single file that contains many
@@ -1249,7 +1250,7 @@ Iterator* VersionSet::MakeInputIterator(Compaction* c) {
   return result;
 }
 
-Compaction* VersionSet::PickCompaction() {
+Compaction* VersionSet::PickCompaction() {// 选择需要压缩的任务进行压缩
   Compaction* c;
   int level;
 

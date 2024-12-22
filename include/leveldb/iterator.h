@@ -25,7 +25,9 @@ namespace leveldb {
 class LEVELDB_EXPORT Iterator {
  public:
   Iterator();
-
+  /**
+   * 禁止赋值和创建对象的方法
+   */
   Iterator(const Iterator&) = delete;
   Iterator& operator=(const Iterator&) = delete;
 

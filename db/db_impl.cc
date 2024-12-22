@@ -566,7 +566,7 @@ void DBImpl::CompactMemTable() {
   VersionEdit edit;
   Version* base = versions_->current();
   base->Ref();
-  Status s = WriteLevel0Table(imm_, &edit, base);
+  Status s = WriteLevel0Table(imm_, &edit, base);// 写入一个新的 Level0表文件, 更新edit
   base->Unref();
 
   if (s.ok() && shutting_down_.load(std::memory_order_acquire)) {
@@ -585,9 +585,9 @@ void DBImpl::CompactMemTable() {
     imm_->Unref();
     imm_ = nullptr;
     has_imm_.store(false, std::memory_order_release);
-    RemoveObsoleteFiles();
+    RemoveObsoleteFiles();// 删除过期的方法
   } else {
-    RecordBackgroundError(s);
+    RecordBackgroundError(s);//
   }
 }
 
@@ -677,17 +677,25 @@ void DBImpl::RecordBackgroundError(const Status& s) {
 }
 
 void DBImpl::MaybeScheduleCompaction() {
-  mutex_.AssertHeld();
+  mutex_.AssertHeld();// 确保 互斥锁已经持有
   if (background_compaction_scheduled_) {
-    // Already scheduled
-  } else if (shutting_down_.load(std::memory_order_acquire)) {
-    // DB is being deleted; no more background compactions
-  } else if (!bg_error_.ok()) {
+// 查看当前的后台压缩任务标识 是否为true, 如果为true
+  } else if (shutting_down_.load(std::memory_order_acquire)) {// 查看数据库, 是否已经关闭, 如果关闭, 不需要进行压缩
+
+  } else if (!bg_error_.ok()) {// 检查是否有后台错误
     // Already got an error; no more changes
   } else if (imm_ == nullptr && manual_compaction_ == nullptr &&
              !versions_->NeedsCompaction()) {
-    // No work to be done
+    // 检查
+    /**
+     * 1. imm 是否为 nullptr, 表示没有不可变内存表需要处理
+     * 2. manual_compaction_ 是否为 nullptr，表示没有手动压缩任务。
+     * 3. versions_->NeedsCompaction() 是否返回 false，表示当前版本不需要压缩。
+     */
   } else {
+    /**
+     * 后台运行 方法
+     */
     background_compaction_scheduled_ = true;
     env_->Schedule(&DBImpl::BGWork, this);
   }
@@ -717,16 +725,19 @@ void DBImpl::BackgroundCall() {
 }
 
 void DBImpl::BackgroundCompaction() {
-  mutex_.AssertHeld();
+  mutex_.AssertHeld();// 确保已经持有对应的互斥锁, 确保线程是安全的
 
-  if (imm_ != nullptr) {
-    CompactMemTable();
+  if (imm_ != nullptr) {// 检查 不可变内存表
+    CompactMemTable();// 如果存在 不可变内存表, 对内存表进行压缩
     return;
   }
-
+/**
+ * 初始化 压缩任务
+ */
   Compaction* c;
   bool is_manual = (manual_compaction_ != nullptr);
   InternalKey manual_end;
+// 处理手动压缩任务
   if (is_manual) {
     ManualCompaction* m = manual_compaction_;
     c = versions_->CompactRange(m->level, m->begin, m->end);
@@ -734,6 +745,7 @@ void DBImpl::BackgroundCompaction() {
     if (c != nullptr) {
       manual_end = c->input(0, c->num_input_files(0) - 1)->largest;
     }
+    //记录日志信息。
     Log(options_.info_log,
         "Manual compaction at level-%d from %s .. %s; will stop at %s\n",
         m->level, (m->begin ? m->begin->DebugString().c_str() : "(begin)"),
@@ -742,15 +754,17 @@ void DBImpl::BackgroundCompaction() {
   } else {
     c = versions_->PickCompaction();
   }
-
+/**
+ * 执行压缩任务
+ */
   Status status;
-  if (c == nullptr) {
+  if (c == nullptr) {// 表示没有需要压缩的任务
     // Nothing to do
-  } else if (!is_manual && c->IsTrivialMove()) {
+  } else if (!is_manual && c->IsTrivialMove()) {// 如果不是 nullptr 且不是 手动压缩任务, 且是简单的文件移动任务
     // Move file to next level
     assert(c->num_input_files(0) == 1);
     FileMetaData* f = c->input(0, 0);
-    c->edit()->RemoveFile(c->level(), f->number);
+    c->edit()->RemoveFile(c->level(), f->number);// 移除当前级别的文件, 添加到一个级别
     c->edit()->AddFile(c->level() + 1, f->number, f->file_size, f->smallest,
                        f->largest);
     status = versions_->LogAndApply(c->edit(), &mutex_);
@@ -764,7 +778,7 @@ void DBImpl::BackgroundCompaction() {
         status.ToString().c_str(), versions_->LevelSummary(&tmp));
   } else {
     CompactionState* compact = new CompactionState(c);
-    status = DoCompactionWork(compact);
+    status = DoCompactionWork(compact);// 重点的方法, 在这个地方 包括压缩操作
     if (!status.ok()) {
       RecordBackgroundError(status);
     }
@@ -773,7 +787,7 @@ void DBImpl::BackgroundCompaction() {
     RemoveObsoleteFiles();
   }
   delete c;
-
+// 处理压缩结果
   if (status.ok()) {
     // Done
   } else if (shutting_down_.load(std::memory_order_acquire)) {
@@ -781,7 +795,7 @@ void DBImpl::BackgroundCompaction() {
   } else {
     Log(options_.info_log, "Compaction error: %s", status.ToString().c_str());
   }
-
+// 处理手动压缩任务的后续
   if (is_manual) {
     ManualCompaction* m = manual_compaction_;
     if (!status.ok()) {
@@ -834,7 +848,7 @@ Status DBImpl::OpenCompactionOutputFile(CompactionState* compact) {
   std::string fname = TableFileName(dbname_, file_number);
   Status s = env_->NewWritableFile(fname, &compact->outfile);
   if (s.ok()) {
-    compact->builder = new TableBuilder(options_, compact->outfile);
+    compact->builder = new TableBuilder(options_, compact->outfile);// 使用表创建器 来构建表对象
   }
   return s;
 }
@@ -907,41 +921,50 @@ Status DBImpl::InstallCompactionResults(CompactionState* compact) {
 }
 
 Status DBImpl::DoCompactionWork(CompactionState* compact) {
+  // 记录开始时间
   const uint64_t start_micros = env_->NowMicros();
   int64_t imm_micros = 0;  // Micros spent doing imm_ compactions
-
+  // 记录日志
   Log(options_.info_log, "Compacting %d@%d + %d@%d files",
       compact->compaction->num_input_files(0), compact->compaction->level(),
       compact->compaction->num_input_files(1),
       compact->compaction->level() + 1);
-
+  // 断言检查
   assert(versions_->NumLevelFiles(compact->compaction->level()) > 0);
   assert(compact->builder == nullptr);
   assert(compact->outfile == nullptr);
+  // 确定最小快照
   if (snapshots_.empty()) {
     compact->smallest_snapshot = versions_->LastSequence();
   } else {
     compact->smallest_snapshot = snapshots_.oldest()->sequence_number();
   }
-
+  // 创建输入迭代器
   Iterator* input = versions_->MakeInputIterator(compact->compaction);
 
   // Release mutex while we're actually doing the compaction work
+  // 释放互斥锁
   mutex_.Unlock();
-
+  //初始化 输入迭代器
   input->SeekToFirst();
   Status status;
   ParsedInternalKey ikey;
   std::string current_user_key;
   bool has_current_user_key = false;
   SequenceNumber last_sequence_for_key = kMaxSequenceNumber;
+  // 处理输入
+  /**
+   * input->Valid()：检查输入迭代器是否有效，即是否还有更多的键值对可以处理。
+    !shutting_down_.load(std::memory_order_acquire)：检查数据库是否正在关闭。
+    使用 std::memory_order_acquire 确保在加载 shutting_down_ 之前的所有写操作都已完成。
+   */
   while (input->Valid() && !shutting_down_.load(std::memory_order_acquire)) {
     // Prioritize immutable compaction work
     if (has_imm_.load(std::memory_order_relaxed)) {
       const uint64_t imm_start = env_->NowMicros();
       mutex_.Lock();
       if (imm_ != nullptr) {
-        CompactMemTable();
+        CompactMemTable();// 核心方法: 压缩内存表
         // Wake up MakeRoomForWrite() if necessary.
         background_work_finished_signal_.SignalAll();
       }
@@ -952,7 +975,7 @@ Status DBImpl::DoCompactionWork(CompactionState* compact) {
     Slice key = input->key();
     if (compact->compaction->ShouldStopBefore(key) &&
         compact->builder != nullptr) {
-      status = FinishCompactionOutputFile(compact, input);
+      status = FinishCompactionOutputFile(compact, input);// 完成当前输出文件的压缩
       if (!status.ok()) {
         break;
       }
@@ -1029,7 +1052,7 @@ Status DBImpl::DoCompactionWork(CompactionState* compact) {
 
     input->Next();
   }
-
+ //处理关闭情况
   if (status.ok() && shutting_down_.load(std::memory_order_acquire)) {
     status = Status::IOError("Deleting DB during compaction");
   }
@@ -1152,30 +1175,29 @@ Status DBImpl::Get(const ReadOptions& options, const Slice& key,
   current->Ref();
 
   bool have_stat_update = false;
-  Version::GetStats stats;
+  Version::GetStats stats; // 查看版本
 
   // Unlock while reading from files and memtables
   {
-    mutex_.Unlock();
-    // First look in the memtable, then in the immutable memtable (if any).
+    mutex_.Unlock();// 查找操作之前 释放互斥锁, 减少锁竞争, 因为查找过程中, 读取操作是无害的, 不需要持有锁
     LookupKey lkey(key, snapshot);
-    if (mem->Get(lkey, value, &s)) {
+    if (mem->Get(lkey, value, &s)) {// 从内存中读取锁
       // Done
-    } else if (imm != nullptr && imm->Get(lkey, value, &s)) {
+    } else if (imm != nullptr && imm->Get(lkey, value, &s)) {// 查找不可变内存表
       // Done
     } else {
-      s = current->Get(options, lkey, value, &stats);
+      s = current->Get(options, lkey, value, &stats);// 查找持久化存储
       have_stat_update = true;
     }
-    mutex_.Lock();
+    mutex_.Lock();// 重新上锁
   }
 
   if (have_stat_update && current->UpdateStats(stats)) {
     MaybeScheduleCompaction(); // 压缩层级的方法 主要是为了提升读取的性能
   }
-  mem->Unref();
-  if (imm != nullptr) imm->Unref();
-  current->Unref();// 减少一个引用数量
+  mem->Unref();// 取消 引用
+  if (imm != nullptr) imm->Unref();// 取消 引用
+  current->Unref();// 取消 引用
   return s;
 }
 
@@ -1192,9 +1214,9 @@ Iterator* DBImpl::NewIterator(const ReadOptions& options) {
 }
 
 void DBImpl::RecordReadSample(Slice key) {
-  MutexLock l(&mutex_);
-  if (versions_->current()->RecordReadSample(key)) {
-    MaybeScheduleCompaction();
+  MutexLock l(&mutex_);// 获取共享锁
+  if (versions_->current()->RecordReadSample(key)) { // 记录读取采样
+    MaybeScheduleCompaction();// 根据需要调度压缩操作，以优化存储空间和提高性能。
   }
 }
 

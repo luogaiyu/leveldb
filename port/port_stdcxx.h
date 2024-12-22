@@ -68,7 +68,7 @@ class LOCKABLE Mutex {
 // Thinly wraps std::condition_variable.
 class CondVar {
  public:
-  explicit CondVar(Mutex* mu) : mu_(mu) { assert(mu != nullptr); }
+  explicit CondVar(Mutex* mu) :  mu_(mu) { assert(mu != nullptr); }
   ~CondVar() = default;
 
   CondVar(const CondVar&) = delete;

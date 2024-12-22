@@ -103,28 +103,29 @@ class DBIter : public Iterator {//
   }
 
   // Picks the number of bytes that can be read until a compaction is scheduled.
+  // 选择在调度压缩操作之前可以读取的字节数。
   size_t RandomCompactionPeriod() {
-    return rnd_.Uniform(2 * config::kReadBytesPeriod);
+    return rnd_.Uniform(2 * config::kReadBytesPeriod);// 返回随机数
   }
 
   DBImpl* db_;
   const Comparator* const user_comparator_;
   Iterator* const iter_;
-  SequenceNumber const sequence_;
+  SequenceNumber const sequence_; // 生成主键的唯一标识符, 确保每条记录都有一个唯一的标识
   Status status_;
   std::string saved_key_;    // == current key when direction_==kReverse
   std::string saved_value_;  // == current raw value when direction_==kReverse
-  Direction direction_;
+  Direction direction_;      // direction: 指的是当前迭代器的遍历方向
   bool valid_;
   Random rnd_;
-  size_t bytes_until_read_sampling_;
+  size_t bytes_until_read_sampling_;// 下一次进行读取采样之前还需要读取多少字节的数据。 随机采样、分层采样、系统采样、重要性采样
 };
 // 解析内部键。记录读取样本并检查键是否有效。
 inline bool DBIter::ParseKey(ParsedInternalKey* ikey) {
-  Slice k = iter_->key();
+  Slice k = iter_->key(); // iter的key 
 
-  size_t bytes_read = k.size() + iter_->value().size();
-  while (bytes_until_read_sampling_ < bytes_read) {
+  size_t bytes_read = k.size() + iter_->value().size();// 已经读取的字节数量
+  while (bytes_until_read_sampling_ < bytes_read) {// 如果采样小于当前的读取的字节数量
     bytes_until_read_sampling_ += RandomCompactionPeriod();
     db_->RecordReadSample(k);
   }
@@ -154,7 +155,7 @@ void DBIter::Next() {
     }
     if (!iter_->Valid()) {
       valid_ = false;
-      saved_key_.clear();
+      saved_key_.clear();// 用于清楚 字符串
       return;
     }
     // saved_key_ already contains the key to skip past.

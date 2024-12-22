@@ -30,7 +30,7 @@ class SnapshotImpl : public Snapshot {
   SnapshotImpl* prev_;
   SnapshotImpl* next_;
 
-  const SequenceNumber sequence_number_;
+  const SequenceNumber sequence_number_;// 当前 快照的序号
 
 #if !defined(NDEBUG)
   SnapshotList* list_ = nullptr;

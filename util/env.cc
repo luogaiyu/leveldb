@@ -40,7 +40,7 @@ Logger::~Logger() = default;
 FileLock::~FileLock() = default;
 
 void Log(Logger* info_log, const char* format, ...) {// 定义 Log函数, 用于格式化 日志消息
-  if (info_log != nullptr) {
+  if (info_log != nullptr) {// std::va_list 类型的变量 ap，用于存储可变参数列表
     std::va_list ap;
     va_start(ap, format);
     info_log->Logv(format, ap);

@@ -114,14 +114,14 @@ typedef uint64_t SequenceNumber;
 static const SequenceNumber kMaxSequenceNumber = ((0x1ull << 56) - 1);
 
 struct ParsedInternalKey {
-  Slice user_key;
-  SequenceNumber sequence;
-  ValueType type;
+  Slice user_key; // 用户键
+  SequenceNumber sequence; // 序列号
+  ValueType type; // 键的类型
 
-  ParsedInternalKey() {}  // Intentionally left uninitialized (for speed)
+  ParsedInternalKey() {}  // 默认初始化, 不进行任何初始化, 未初始化的变量可以快速创建
   ParsedInternalKey(const Slice& u, const SequenceNumber& seq, ValueType t)
-      : user_key(u), sequence(seq), type(t) {}
-  std::string DebugString() const;
+      : user_key(u), sequence(seq), type(t) {}// 带参数的构造函数
+  std::string DebugString() const; // 调试字符串
 };
 
 // Return the length of the encoding of "key".
@@ -228,24 +228,25 @@ inline bool ParseInternalKey(const Slice& internal_key,
 }
 
 // A helper class useful for DBImpl::Get()
-class LookupKey {
+// 为什么需要这个类?
+class LookupKey {// 相当于 给一些信息 来辅助检索
  public:
   // Initialize *this for looking up user_key at a snapshot with
   // the specified sequence number.
-  LookupKey(const Slice& user_key, SequenceNumber sequence);
+  LookupKey(const Slice& user_key, SequenceNumber sequence);// 构造函数, 初始化 以查看指定 序列号的user_key
 
-  LookupKey(const LookupKey&) = delete;
+  LookupKey(const LookupKey&) = delete; 
   LookupKey& operator=(const LookupKey&) = delete;
 
-  ~LookupKey();
+  ~LookupKey();// 析构函数
 
-  // Return a key suitable for lookup in a MemTable.
+  // 返回一个适合在 MemTable 中查找的键
   Slice memtable_key() const { return Slice(start_, end_ - start_); }
 
-  // Return an internal key (suitable for passing to an internal iterator)
+  // 返回一个内部键（适合传递给内部迭代器）
   Slice internal_key() const { return Slice(kstart_, end_ - kstart_); }
 
-  // Return the user key
+  // 返回用户键
   Slice user_key() const { return Slice(kstart_, end_ - kstart_ - 8); }
 
  private:
