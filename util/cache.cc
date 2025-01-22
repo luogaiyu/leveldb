@@ -1,7 +1,3 @@
-// Copyright (c) 2011 The LevelDB Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file. See the AUTHORS file for names of contributors.
-
 // 引入所需的头文件, 包括LevelDB 的缓存模块
 #include "leveldb/cache.h"
 
@@ -20,39 +16,18 @@ Cache::~Cache() {}// 确保派生类的析构函数
 
 namespace {
 
-// LRU cache implementation
-//
-// Cache entries have an "in_cache" boolean indicating whether the cache has a
-// reference on the entry.  The only ways that this can become false without the
-// entry being passed to its "deleter" are via Erase(), via Insert() when
-// an element with a duplicate key is inserted, or on destruction of the cache.
-//
-// The cache keeps two linked lists of items in the cache.  All items in the
-// cache are in one list or the other, and never both.  Items still referenced
-// by clients but erased from the cache are in neither list.  The lists are:
-// - in-use:  contains the items currently referenced by clients, in no
-//   particular order.  (This list is used for invariant checking.  If we
-//   removed the check, elements that would otherwise be on this list could be
-//   left as disconnected singleton lists.)
-// - LRU:  contains the items not currently referenced by clients, in LRU order
-// Elements are moved between these lists by the Ref() and Unref() methods,
-// when they detect an element in the cache acquiring or losing its only
-// external reference.
-
-// An entry is a variable length heap-allocated structure.  Entries
-// are kept in a circular doubly linked list ordered by access time.
 struct LRUHandle {
-  void* value;// 缓存条目的值
+  void* value;                               // 缓存条目的值 - void* 指的是通用类型, 实际上存的是地址, 能够指向不同地方
   void (*deleter)(const Slice&, void* value);// 当条目被移除时调用的删除函数
-  LRUHandle* next_hash; // 指向下一个具有相同hash值的LRUHandle, 用于处理hash冲突
-  LRUHandle* next;// 指向链表中下一个LRUHandle 用于维护LRU链表的顺序
-  LRUHandle* prev;// 指向上一个 LRUHandle 用于维护LRU链表的顺序
-  size_t charge;  // 通常用于计算缓存的总大小。 TODO(opt): Only allow uint32_t?
-  size_t key_length; //存储键的大小
-  bool in_cache;     // 是否在缓存中出现, hether entry is in the cache.
-  uint32_t refs;     // 表示该条目的引用次数, 包括 缓存本身的引用次数, 如果引用次数为0的时候, 条目可以被安全的删除, References, including cache reference, if present.
-  uint32_t hash;     // 存储键的hash值, 用于快速分片和比较 Hash of key(); used for fast sharding and comparisons
-  char key_data[1];  // 用于存储键的实际内容, 允许在 结构体末尾动态分配内存来存储键 Beginning of key
+  LRUHandle* next_hash;                      // 指向下一个具有相同hash值的LRUHandle, 用于处理hash冲突
+  LRUHandle* next;                           // 指向链表中下一个LRUHandle 用于维护LRU链表的顺序
+  LRUHandle* prev;                           // 指向上一个 LRUHandle 用于维护LRU链表的顺序
+  size_t charge;                             // 通常用于计算缓存的总大小。 TODO(opt): Only allow uint32_t?
+  size_t key_length;                         //存储键的大小
+  bool in_cache;                             // 是否在缓存中出现, hether entry is in the cache.
+  uint32_t refs;                             // 表示该条目的引用次数, 包括 缓存本身的引用次数, 如果引用次数为0的时候, 条目可以被安全的删除, References, including cache reference, if present.
+  uint32_t hash;                             // 存储键的hash值, 用于快速分片和比较 Hash of key(); used for fast sharding and comparisons
+  char key_data[1];                          // 用于存储键的实际内容, 允许在 结构体末尾动态分配内存来存储键 Beginning of key
 
   Slice key() const {
     // next is only equal to this if the LRU handle is the list head of an
@@ -62,14 +37,8 @@ struct LRUHandle {
     return Slice(key_data, key_length);//Slice(const char* d, size_t n) : data_(d), size_(n) {} Slice(const char* s) : data_(s), size_(strlen(s)) {} 的区别是什么? 我想知道 是不是相当于会少一次 strlen的函数调用, 我不太理解 为什么不直接用 Slice(const char* s)
   }
 };
-//定义一个结构体 LRUHandle 用于表示缓存中的项, 每个项 包括值 删除器
-
-// We provide our own simple hash table since it removes a whole bunch
-// of porting hacks and is also faster than some of the built-in hash
-// table implementations in some of the compiler/runtime combinations
-// we have tested.  E.g., readrandom speeds up by ~5% over the g++
-// 4.4.3's builtin hashtable.
-class HandleTable {// HandleTable 表是个hash表
+// 相当于给 LRUHandle 新增 hash表管理
+class HandleTable { 
  public:
   HandleTable() : length_(0), elems_(0), list_(nullptr) { Resize(); }// 构建方法
   ~HandleTable() { delete[] list_; }// 删除方法
@@ -78,22 +47,21 @@ class HandleTable {// HandleTable 表是个hash表
     return *FindPointer(key, hash);
   }
 
-  LRUHandle* Insert(LRUHandle* h) {// 插入一个新的 LRUHandle
+// 插入一个新的 LRUHandle, 
+  LRUHandle* Insert(LRUHandle* h) {
     LRUHandle** ptr = FindPointer(h->key(), h->hash);
-    LRUHandle* old = *ptr;
+    LRUHandle* old = *ptr;// 这里指向的是 LRU 
     h->next_hash = (old == nullptr ? nullptr : old->next_hash);
     *ptr = h;
     if (old == nullptr) {
       ++elems_;
       if (elems_ > length_) {
-        // Since each cache entry is fairly large, we aim for a small
-        // average linked list length (<= 1).
         Resize();// 如果元素数量 超过当前的hash表的个数, 扩大当前的hash表数量
       }
     }
     return old;
   }
-
+// 
   LRUHandle* Remove(const Slice& key, uint32_t hash) {
     LRUHandle** ptr = FindPointer(key, hash);
     LRUHandle* result = *ptr;
@@ -105,18 +73,13 @@ class HandleTable {// HandleTable 表是个hash表
   }
 
  private:
-  // The table consists of an array of buckets where each bucket is
-  // a linked list of cache entries that hash into the bucket.
   uint32_t length_;
   uint32_t elems_;
-  LRUHandle** list_;
+  LRUHandle** list_;// 默认创建的是一个二维数组
 
-  // Return a pointer to slot that points to a cache entry that
-  // matches key/hash.  If there is no such cache entry, return a
-  // pointer to the trailing slot in the corresponding linked list.
-  LRUHandle** FindPointer(const Slice& key, uint32_t hash) {// 哈希表中找到与给定键和哈希值匹配的 LRUHandle 对象
-    LRUHandle** ptr = &list_[hash & (length_ - 1)]; // 计算 hash值 对应的桶索引
-    while (*ptr != nullptr && ((*ptr)->hash != hash || key != (*ptr)->key())) {
+  LRUHandle** FindPointer(const Slice& key, uint32_t hash) {// 哈希表中找到与给定键和哈希值匹配的 LRUHandle 对象, 如果没有的话, 返回最后一个
+    LRUHandle** ptr = &list_[hash & (length_ - 1)];         // 计算 hash值 对应的桶索引, 首先取到对应的桶的索引
+    while (*ptr != nullptr && ((*ptr)->hash != hash || key != (*ptr)->key())) {// 对当前 桶部分的索引进行遍历
       ptr = &(*ptr)->next_hash;
     }
     return ptr;
@@ -128,7 +91,7 @@ class HandleTable {// HandleTable 表是个hash表
       new_length *= 2;
     }
     LRUHandle** new_list = new LRUHandle*[new_length];
-    memset(new_list, 0, sizeof(new_list[0]) * new_length);
+    memset(new_list, 0, sizeof(new_list[0]) * new_length);// 扩充数组
     uint32_t count = 0;
     for (uint32_t i = 0; i < length_; i++) {
       LRUHandle* h = list_[i];
@@ -148,29 +111,25 @@ class HandleTable {// HandleTable 表是个hash表
     length_ = new_length;
   }
 };
-// 实现hash表
 
-// A single shard of sharded cache.
+
 /**
- * 为了代码可读性,考虑
+ * 单独的 共享缓存的 分片
  */
 class LRUCache {
  public:
-  LRUCache();// 默认构造函数
+  LRUCache();  // 默认构造函数
   ~LRUCache(); // 默认 析构函数
 
-  // Separate from constructor so caller can easily make an array of LRUCache
-  void SetCapacity(size_t capacity) { capacity_ = capacity; }// 设置容量的方法
-
-  // Like Cache methods, but with an extra "hash" parameter.
+  void SetCapacity(size_t capacity) { capacity_ = capacity; } // 设置容量的方法
   Cache::Handle* Insert(const Slice& key, uint32_t hash, void* value,
                         size_t charge,
-                        void (*deleter)(const Slice& key, void* value));// 插入方法
+                        void (*deleter)(const Slice& key, void* value)); // 插入方法
   Cache::Handle* Lookup(const Slice& key, uint32_t hash);// 查找方法 等等
-  void Release(Cache::Handle* handle);
-  void Erase(const Slice& key, uint32_t hash);
-  void Prune();
-  size_t TotalCharge() const {
+  void Release(Cache::Handle* handle); // 释放LRU对象
+  void Erase(const Slice& key, uint32_t hash);// 擦除 对应的key 和 hash
+  void Prune(); // 剪枝操作
+  size_t TotalCharge() const {// 总共申请的内存
     MutexLock l(&mutex_);
     return usage_;
   }
@@ -182,22 +141,21 @@ class LRUCache {
   void Unref(LRUHandle* e);
   bool FinishErase(LRUHandle* e) EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
-  // Initialized before use.
-  size_t capacity_;
+  size_t capacity_; // 容量
 
-  // mutex_ protects the following state.
-  mutable port::Mutex mutex_;
-  size_t usage_ GUARDED_BY(mutex_);
+  mutable port::Mutex mutex_;// 多线程操作符, 防止出现多线程异常
+  size_t usage_ GUARDED_BY(mutex_);// 容量
 
-  // Dummy head of LRU list.
-  // lru.prev is newest entry, lru.next is oldest entry.
-  // Entries have refs==1 and in_cache==true.
+  // lru 列表的虚拟头节点
+  // lru.prev: 最新条目, lru.next 最旧的条目
+  // 注意: 每个元素都是 refs ==1和 is_cache 为true
   LRUHandle lru_ GUARDED_BY(mutex_);
 
-  // Dummy head of in-use list.
-  // Entries are in use by clients, and have refs >= 2 and in_cache==true.
+  // 主要是已经被使用中的头节点
+  // 每个元素 都是 refs 超过2 并且is_cache 这个属性为true
   LRUHandle in_use_ GUARDED_BY(mutex_);
 
+  // 
   HandleTable table_ GUARDED_BY(mutex_);
 };
 //定义了一个类 LRUCache，实现了 LRU 缓存。包含插入、查找、释放、删除、修剪和获取总权重的方法。
@@ -240,19 +198,17 @@ void LRUCache::Unref(LRUHandle* e) {
     (*e->deleter)(e->key(), e->value);
     free(e);
   } else if (e->in_cache && e->refs == 1) {
-    // No longer in use; move to lru_ list.
     LRU_Remove(e);// 删除当前的元素
     LRU_Append(&lru_, e); 
   }
 }
 
-void LRUCache::LRU_Remove(LRUHandle* e) {
+void LRUCache::LRU_Remove(LRUHandle* e) { // 将e这个节点删除 
   e->next->prev = e->prev;
   e->prev->next = e->next;
 }
 
-void LRUCache::LRU_Append(LRUHandle* list, LRUHandle* e) {// LRU 添加
-  // Make "e" newest entry by inserting just before *list
+void LRUCache::LRU_Append(LRUHandle* list, LRUHandle* e) {// 将 e 这个节点添加到 list
   e->next = list;
   e->prev = list->prev;
   e->prev->next = e;
@@ -260,12 +216,12 @@ void LRUCache::LRU_Append(LRUHandle* list, LRUHandle* e) {// LRU 添加
 }
 
 Cache::Handle* LRUCache::Lookup(const Slice& key, uint32_t hash) {// 查找当前的元素
-  MutexLock l(&mutex_);
+  MutexLock l(&mutex_);// 拿到多线程的操作符
   LRUHandle* e = table_.Lookup(key, hash);
   if (e != nullptr) {
     Ref(e);
   }
-  return reinterpret_cast<Cache::Handle*>(e);
+  return reinterpret_cast<Cache::Handle*>(e);// reinterpret_cast: 强制转化类型
 }
 
 void LRUCache::Release(Cache::Handle* handle) {// 释放元素
@@ -346,15 +302,15 @@ static const int kNumShardBits = 4;
 static const int kNumShards = 1 << kNumShardBits;
 /**
  * 目的是 提供并发能力, 将缓存分成多个独立的分片
- * 这一段的本质是实现并发能力
+ * 这一段的本质是实现并发能力-
  */
 class ShardedLRUCache : public Cache {// 用于实现分片的LRU缓存
  private:
-  LRUCache shard_[kNumShards];
-  port::Mutex id_mutex_;
-  uint64_t last_id_;
+  LRUCache shard_[kNumShards]; // 创建 LRU的数组
+  port::Mutex id_mutex_;       // 提供并发操作符, 本质上是使用 互斥锁 和 条件变量 这两个方法进行 
+  uint64_t last_id_;           // last_id 指的是什么?
 
-  static inline uint32_t HashSlice(const Slice& s) {// 使用Hash 方法 来对Slice进行
+  static inline uint32_t HashSlice(const Slice& s) {// 使用Hash函数 对key进行hash,用来对数据进行分散
     return Hash(s.data(), s.size(), 0);
   }
 
@@ -367,7 +323,7 @@ class ShardedLRUCache : public Cache {// 用于实现分片的LRU缓存
       shard_[s].SetCapacity(per_shard);// 将每个分片 设置为 per_shard
     }
   }
-  ~ShardedLRUCache() override {} // 析构 函数
+  ~ShardedLRUCache() override {} // 析构 函数 插入 只会 对当前的LRUCache 进行操作
   Handle* Insert(const Slice& key, void* value, size_t charge,
                  void (*deleter)(const Slice& key, void* value)) override {
     const uint32_t hash = HashSlice(key);

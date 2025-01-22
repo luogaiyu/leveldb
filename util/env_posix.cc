@@ -196,11 +196,12 @@ class PosixRandomAccessFile final : public RandomAccessFile {
     }
   }
 
+  // read方法
   Status Read(uint64_t offset, size_t n, Slice* result,
-              char* scratch) const override {
+              char* scratch) const override {// 
     int fd = fd_;
     if (!has_permanent_fd_) {
-      fd = ::open(filename_.c_str(), O_RDONLY | kOpenBaseFlags);
+      fd = ::open(filename_.c_str(), O_RDONLY | kOpenBaseFlags);// c_str() 返回一个指向null结尾的字符数组
       if (fd < 0) {
         return PosixError(filename_, errno);
       }
@@ -210,7 +211,7 @@ class PosixRandomAccessFile final : public RandomAccessFile {
 
     Status status;
     ssize_t read_size = ::pread(fd, scratch, n, static_cast<off_t>(offset));
-    *result = Slice(scratch, (read_size < 0) ? 0 : read_size);
+    *result = Slice(scratch, (read_size < 0) ? 0 : read_size);// 
     if (read_size < 0) {
       // An error: return a non-ok status.
       status = PosixError(filename_, errno);
@@ -224,7 +225,7 @@ class PosixRandomAccessFile final : public RandomAccessFile {
   }
 
  private:
-  const bool has_permanent_fd_;  // If false, the file is opened on every read.
+  const bool has_permanent_fd_;  // 如果为 false, 每次读取时都会打开文本.
   const int fd_;                 // -1 if has_permanent_fd_ is false.
   Limiter* const fd_limiter_;
   const std::string filename_;

@@ -44,7 +44,13 @@ class DBIter : public Iterator {//
   // (2) When moving backwards, the internal iterator is positioned
   //     just before all entries whose user key == this->key().
   enum Direction { kForward, kReverse };
-// 初始化 DBIter 的各个成员变量，包括数据库实例、比较器、内部迭代器、序列号、随机数生成器等。
+  /**
+   * db: 数据库实例
+   * cmp: 比较器
+   * iter: 迭代器
+   * s : 序列器
+   * seed: 随机种子
+   */
   DBIter(DBImpl* db, const Comparator* cmp, Iterator* iter, SequenceNumber s,
          uint32_t seed)
       : db_(db),
@@ -56,6 +62,7 @@ class DBIter : public Iterator {//
         rnd_(seed),
         bytes_until_read_sampling_(RandomCompactionPeriod()) {}
 
+// 禁止赋值和创建, 防止内存泄漏
   DBIter(const DBIter&) = delete;
   DBIter& operator=(const DBIter&) = delete;
 // 释放内部迭代器
@@ -277,7 +284,7 @@ void DBIter::FindPrevUserEntry() {
   }
 }
 
-void DBIter::Seek(const Slice& target) {// 定位到指定的用户键。调整内部迭代器的位置并查找第一个有效的用户键条目
+void DBIter::Seek(const Slice& target) { // 定位到指定的用户键。调整内部迭代器的位置并查找第一个有效的用户键条目
   direction_ = kForward;
   ClearSavedValue();
   saved_key_.clear();

@@ -90,7 +90,7 @@ class IteratorWrapper {
     }
   }
 
-  Iterator* iter_;
+  Iterator* iter_;// 
   bool valid_;
   Slice key_;
 };

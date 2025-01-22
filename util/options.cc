@@ -9,6 +9,6 @@
 
 namespace leveldb {
 
-Options::Options() : comparator(BytewiseComparator()), env(Env::Default()) {}// 初始化 
+Options::Options() : comparator(BytewiseComparator()), env(Env::Default()) {}// DB 选项, 通过默认的Env 和 比较器(BytewiseComparator)  
 
 }  // namespace leveldb

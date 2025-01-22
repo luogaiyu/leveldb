@@ -82,32 +82,36 @@ class FileState {
     size_ = 0;
   }
 
-//Read 方法 用于从文件中 读取数据, 根据给定的偏移量和读取长度, 从 blocks_ (预分配的块读取数据) 并把数据存储在提供的缓冲区 
+// 方法: 读取对应的文件
+/*
+ * offset: 偏移量
+ * n:      要读取的字节大小
+ * result: 返回结果, 因为传入的地址, 所以方法内能进行修改
+ * scratch: 目标缓存区, 开始的索引
+ */
   Status Read(uint64_t offset, size_t n, Slice* result, char* scratch) const { // 
     MutexLock lock(&blocks_mutex_);// 确保在多线程环境下 对共享资源安全
-    // 检查给定的偏移量是否大于文件的总大小。如果是，则返回一个 IOError 状态。
+    // 检查给定的 读取偏移量 是否大于文件的总大小。如果是，则返回一个 IOError 状态。
     if (offset > size_) {
       return Status::IOError("Offset greater than file size.");
     }
-    // 计算可用字节数
+    // 计算 当前的可读取的大小, 如果 要读取的大小> 当前可读取大小, 就只读取剩余的大小
     const uint64_t available = size_ - offset;
     if (n > available) {
       n = static_cast<size_t>(available);
     }
-    // 处理零字节读取
+
+    // 如果是0字节, 就返回空Slice() 并返回成功的状态
     if (n == 0) {
       *result = Slice();
       return Status::OK();
     }
-    // 断言检查
+    // 这里是为了防止除数超过 无符号整数的极限 
     assert(offset / kBlockSize <= std::numeric_limits<size_t>::max());
 
-    // static_cast<size_t> 使用 强制转换
-    size_t block = static_cast<size_t>(offset / kBlockSize); // block 号
-    //block的 偏移量
-    size_t block_offset = offset % kBlockSize;
-    // 计算要复制的字节数
-    size_t bytes_to_copy = n;
+    size_t block = static_cast<size_t>(offset / kBlockSize);  // block 数量
+    size_t block_offset = offset % kBlockSize;// block的 偏移量
+    size_t bytes_to_copy = n;// 计算要复制的字节数
     char* dst = scratch;// 指向目标缓存区
 
     while (bytes_to_copy > 0) {// 将数据 从block中读取出来, 相当于在磁盘上读了一些字节, 本质的操作是 std::memcpy
@@ -122,9 +126,9 @@ class FileState {
       block++;
       block_offset = 0;
     }
-
+    
     *result = Slice(scratch, n); // 相当于 从stratch 缓冲区, 读取 n个字节的数据, 并作为Slice 作为result的结果
-    return Status::OK();// 返回 工作正常的状态
+    return Status::OK();         // 返回 工作正常的状态
   }
 /**
  * RAII（Resource Acquisition Is Initialization，资源获取即初始化）是一种编程技术，
@@ -180,7 +184,7 @@ class FileState {
    */
 
   mutable port::Mutex blocks_mutex_;
-  std::vector<char*> blocks_ GUARDED_BY(blocks_mutex_);
+  std::vector<char*> blocks_ GUARDED_BY(blocks_mutex_);// blocks_: 使用block
   uint64_t size_ GUARDED_BY(blocks_mutex_); // size_表示 文件的大小
 };
 /**
@@ -221,13 +225,18 @@ class SequentialFileImpl : public SequentialFile {// SequentialFileImpl 这个�
   FileState* file_;// 主要定义一个文件
   uint64_t pos_;// 这个pos 指的就是 对应字节数量
 };
-
+// 任意读取文件 + 文件读取逻辑
 class RandomAccessFileImpl : public RandomAccessFile {// 提供
  public:
   explicit RandomAccessFileImpl(FileState* file) : file_(file) { file_->Ref(); }
 
   ~RandomAccessFileImpl() override { file_->Unref(); }
-
+  /**
+   * offset: 文件偏移量
+   * n: 文件大小
+   * result: 结果句柄
+   * scratch: 结果的偏凉
+   */
   Status Read(uint64_t offset, size_t n, Slice* result,
               char* scratch) const override {
     return file_->Read(offset, n, result, scratch);// 在任意位置进行读取

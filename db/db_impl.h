@@ -61,14 +61,13 @@
 
 namespace leveldb {
 
-class MemTable;
+class MemTable; // 提前声明 todo: 搞清楚提前声明有什么用处, 降低编译器寻址压力???
 class TableCache;// Table Cache 是在磁盘文件在内存中缓存的新的索引
 
-//  版本相关
-class Version;
+class Version; // 版本类
 class VersionEdit;
 class VersionSet;
-
+// 
 class DBImpl : public DB {
  public:
  // 传入两个参数 option + dbname

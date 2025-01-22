@@ -268,6 +268,7 @@ class LEVELDB_EXPORT SequentialFile {
 };
 
 // A file abstraction for randomly reading the contents of a file.
+// 任意读取文件
 class LEVELDB_EXPORT RandomAccessFile {
  public:
  // 表示 使用默认构造函数
@@ -283,7 +284,7 @@ class LEVELDB_EXPORT RandomAccessFile {
                       char* scratch) const = 0;
 };
 
-// 
+// 文件写入性 可写入的文件
 class LEVELDB_EXPORT WritableFile {
  public:
   WritableFile() = default;
@@ -314,6 +315,7 @@ class LEVELDB_EXPORT Logger {
 };
 
 // Identifies a locked file.
+// 文件锁
 class LEVELDB_EXPORT FileLock {
  public:
   FileLock() = default;

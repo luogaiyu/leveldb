@@ -41,7 +41,7 @@ class LEVELDB_EXPORT Status {
   static Status NotFound(const Slice& msg, const Slice& msg2 = Slice()) {
     return Status(kNotFound, msg, msg2);
   }
-  static Status Corruption(const Slice& msg, const Slice& msg2 = Slice()) {
+  static Status Corruption(const Slice& msg, const Slice& msg2 = Slice()) {// 崩溃状态
     return Status(kCorruption, msg, msg2);
   }
   static Status NotSupported(const Slice& msg, const Slice& msg2 = Slice()) {

@@ -51,8 +51,8 @@ DecodeFrom 方法从输入的 Slice 中解码 Footer 的内容。
 返回解码结果 result。
  * 
  */
-Status Footer::DecodeFrom(Slice* input) {
-  if (input->size() < kEncodedLength) {
+Status Footer::DecodeFrom(Slice* input) { // 解码
+  if (input->size() < kEncodedLength) {// 检查 当前的 size
     return Status::Corruption("not an sstable (footer too short)");
   }
 
@@ -77,42 +77,34 @@ Status Footer::DecodeFrom(Slice* input) {
   return result;
 }
 /**
-ReadBlock 函数从文件中读取一个块的内容，并解压（如果需要）。
-初始化 result 的成员变量。
-计算块的大小 n，并分配缓冲区 buf 来存储块的内容和尾部信息。
-调用 file->Read 方法读取块的内容和尾部信息到 contents 中。
-检查读取是否成功，如果不成功，删除缓冲区并返回错误状态。
-检查读取的内容大小是否等于 n + kBlockTrailerSize，如果不等于，删除缓冲区并返回错误状态。
-如果 options.verify_checksums 为 true，计算并验证块的 CRC 校验码。
-根据块的类型（压缩方式）进行不同的处理：
-无压缩：直接使用读取的数据。
-Snappy 压缩：解压 Snappy 压缩的数据。
-Zstd 压缩：解压 Zstd 压缩的数据。
-设置 result 的成员变量，包括解压后的数据、是否堆分配和是否可缓存。
-返回 Status::OK() 表示成功。
+ * file:要读取的文件
+ * options: 读取文件的选项
+ * handle: 读取block对应的索引信息 用于定位要读取文件的位置
+ * result: 读取的结果
  */
 Status ReadBlock(RandomAccessFile* file, const ReadOptions& options,
                  const BlockHandle& handle, BlockContents* result) {
+  // 首先对result 句柄进行初始化
   result->data = Slice();
   result->cachable = false;
   result->heap_allocated = false;
 
-  // Read the block contents as well as the type/crc footer.
-  // See table_builder.cc for the code that built this structure.
-  size_t n = static_cast<size_t>(handle.size());
-  char* buf = new char[n + kBlockTrailerSize];
+
+  size_t n = static_cast<size_t>(handle.size());// n: 表示handle句柄的大小
+  char* buf = new char[n + kBlockTrailerSize];  // 创建内存区 数据大小+尾部数据大小 
   Slice contents;
-  Status s = file->Read(handle.offset(), n + kBlockTrailerSize, &contents, buf);
+  Status s = file->Read(handle.offset(), n + kBlockTrailerSize, &contents, buf); //  
   if (!s.ok()) {
     delete[] buf;
     return s;
   }
+  // 
   if (contents.size() != n + kBlockTrailerSize) {
     delete[] buf;
     return Status::Corruption("truncated block read");
   }
 
-  // Check the crc of the type and the block contents
+  // 检查 crc的类型和 crc 数据
   const char* data = contents.data();  // Pointer to where Read put the data
   if (options.verify_checksums) {
     const uint32_t crc = crc32c::Unmask(DecodeFixed32(data + n + 1));
@@ -123,7 +115,7 @@ Status ReadBlock(RandomAccessFile* file, const ReadOptions& options,
       return s;
     }
   }
-
+  // 查看当前数据的类型,如果是压缩数据就需要调用对应的接口进行解码
   switch (data[n]) {
     case kNoCompression:
       if (data != buf) {

@@ -29,20 +29,19 @@ class Block;
 class RandomAccessFile;
 struct ReadOptions;
 
-// BlockHandle is a pointer to the extent of a file that stores a data
-// block or a meta block.
+// 用于标识数据块在文件中的位置和大小, 用于索引和元数据块的管理, 帮助快速定位和读取数据块
 class BlockHandle {
  public:
-  // Maximum encoding length of a BlockHandle
+  // BlockHandle最大编码长度
   enum { kMaxEncodedLength = 10 + 10 };
 
   BlockHandle();
 
-  // The offset of the block in the file.
+  // offset: 偏移量
   uint64_t offset() const { return offset_; }
   void set_offset(uint64_t offset) { offset_ = offset; }
 
-  // The size of the stored block
+  // size: 大小
   uint64_t size() const { return size_; }
   void set_size(uint64_t size) { size_ = size; }
 
@@ -54,27 +53,27 @@ class BlockHandle {
   uint64_t size_;
 };
 
-// Footer encapsulates the fixed information stored at the tail
-// end of every table file.
+/**
+ * 定义Footer: 表示LevelDB表文件的尾部信息
+ * 包含 表文件中 元索引块 和索引块的位置信息
+ */
 class Footer {
  public:
-  // Encoded length of a Footer.  Note that the serialization of a
-  // Footer will always occupy exactly this many bytes.  It consists
-  // of two block handles and a magic number.
+ // 表示Footer 的编码长度, 由两个BlockHandle的最大编码长度和一个8字节的魔数
+ // 在 C++ 中，枚举值（enum）确实可以被视为静态常量，即使它们没有显式地使用 static 关键字。这是因为枚举值在编译时就被确定，并且属于类的静态成员。
   enum { kEncodedLength = 2 * BlockHandle::kMaxEncodedLength + 8 };
-
+  // 默认无参构造函数
   Footer() = default;
 
-  // The block handle for the metaindex block of the table
-  const BlockHandle& metaindex_handle() const { return metaindex_handle_; }
-  void set_metaindex_handle(const BlockHandle& h) { metaindex_handle_ = h; }
+  
+  const BlockHandle& metaindex_handle() const { return metaindex_handle_; }// 返回元索引块的句柄 
+  void set_metaindex_handle(const BlockHandle& h) { metaindex_handle_ = h; }// 设置索引块的句柄。指向具体的 数据
 
-  // The block handle for the index block of the table
-  const BlockHandle& index_handle() const { return index_handle_; }
-  void set_index_handle(const BlockHandle& h) { index_handle_ = h; }
+  const BlockHandle& index_handle() const { return index_handle_; } // 返回索引块的句柄。
+  void set_index_handle(const BlockHandle& h) { index_handle_ = h; } // 设置元索引块的句柄, 就是指向 元数据
 
-  void EncodeTo(std::string* dst) const;
-  Status DecodeFrom(Slice* input);
+  void EncodeTo(std::string* dst) const;// 使用Encode方法来进行编码
+  Status DecodeFrom(Slice* input); //解码
 
  private:
   BlockHandle metaindex_handle_;
@@ -84,24 +83,22 @@ class Footer {
 // kTableMagicNumber was picked by running
 //    echo http://code.google.com/p/leveldb/ | sha1sum
 // and taking the leading 64 bits.
-static const uint64_t kTableMagicNumber = 0xdb4775248b80fb57ull;
+static const uint64_t kTableMagicNumber = 0xdb4775248b80fb57ull;// 魔数
 
 // 1-byte type + 32-bit crc
-static const size_t kBlockTrailerSize = 5;
+static const size_t kBlockTrailerSize = 5;// 设置block的尾部大小, 1字节:类型 + 4字节crc校验
 
 struct BlockContents {
-  Slice data;           // Actual contents of data
-  bool cachable;        // True iff data can be cached
-  bool heap_allocated;  // True iff caller should delete[] data.data()
+  Slice data;           // 数据
+  bool cachable;        // 是否可以缓存
+  bool heap_allocated;  // 是否需要调用者删除数据
 };
 
-// Read the block identified by "handle" from "file".  On failure
-// return non-OK.  On success fill *result and return OK.
+// 从 file 中 读取由  handle 标识的块, 如果失败, 返回非 OK, 如果成功, 填充 *result 并返回 OK
 Status ReadBlock(RandomAccessFile* file, const ReadOptions& options,
                  const BlockHandle& handle, BlockContents* result);
 
-// Implementation details follow.  Clients should ignore,
-
+// inline : 建议编译器将函数内联展开
 inline BlockHandle::BlockHandle()
     : offset_(~static_cast<uint64_t>(0)), size_(~static_cast<uint64_t>(0)) {}
 

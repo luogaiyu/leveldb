@@ -32,7 +32,9 @@ class LEVELDB_EXPORT TableBuilder {
   // building in *file.  Does not close the file.  It is up to the
   // caller to close the file after calling Finish().
   TableBuilder(const Options& options, WritableFile* file);
-
+ /**
+  * 删除赋值和创建函数, 防止出现内存泄漏
+  */
   TableBuilder(const TableBuilder&) = delete;
   TableBuilder& operator=(const TableBuilder&) = delete;
 
@@ -45,11 +47,16 @@ class LEVELDB_EXPORT TableBuilder {
   // passed to the constructor is different from its value in the
   // structure passed to this method, this method will return an error
   // without changing any fields.
-  Status ChangeOptions(const Options& options);
+  Status ChangeOptions(const Options& options);// 对Option 进行修改
 
   // Add key,value to the table being constructed.
   // REQUIRES: key is after any previously added key according to comparator.
   // REQUIRES: Finish(), Abandon() have not been called
+  /**
+   * 将 key 和 value 添加到 正在构建的表中
+   * key  必须按照 comparator 的顺序
+   * 
+   */
   void Add(const Slice& key, const Slice& value);
 
   // Advanced operation: flush any buffered key/value pairs to file.
@@ -59,6 +66,7 @@ class LEVELDB_EXPORT TableBuilder {
   void Flush();
 
   // Return non-ok iff some error has been detected.
+  // 如果有些错误被检测到就返回错误
   Status status() const;
 
   // Finish building the table.  Stops using the file passed to the

@@ -27,9 +27,9 @@ enum CompressionType {
 };
 
 // Options to control the behavior of a database (passed to DB::Open)
-struct LEVELDB_EXPORT Options { // Option: 表示选项
+struct LEVELDB_EXPORT Options { // 数据库的配置项
   // Create an Options object with default values for all fields.
-  Options();
+  Options(); // 创建Options对象, 并为所有字段设置默认值
 
   // -------------------
   // Parameters that affect behavior
@@ -42,18 +42,16 @@ struct LEVELDB_EXPORT Options { // Option: 表示选项
   // comparator provided to previous open calls on the same DB.
   const Comparator* comparator;
 
-  // If true, the database will be created if it is missing.
-  bool create_if_missing = false;
+  bool create_if_missing = false; // 如果 数据库是迷失的, 就会被创建
 
-  // If true, an error is raised if the database already exists.
-  bool error_if_exists = false;
+  bool error_if_exists = false; // 如果 数据库已经存在就会抛出异常
 
   // If true, the implementation will do aggressive checking of the
   // data it is processing and will stop early if it detects any
   // errors.  This may have unforeseen ramifications: for example, a
   // corruption of one DB entry may cause a large number of entries to
   // become unreadable or for the entire DB to become unopenable.
-  bool paranoid_checks = false;
+  bool paranoid_checks = false; // 
 
   // Use the specified object to interact with the environment,
   // e.g. to read/write files, schedule background work, etc.
@@ -76,7 +74,7 @@ struct LEVELDB_EXPORT Options { // Option: 表示选项
   // so you may wish to adjust this parameter to control memory usage.
   // Also, a larger write buffer will result in a longer recovery time
   // the next time the database is opened.
-  size_t write_buffer_size = 4 * 1024 * 1024;
+  size_t write_buffer_size = 4 * 1024 * 1024;// write buffer的大小
 
   // Number of open files that can be used by the DB.  You may need to
   // increase this if your database has a large working set (budget
@@ -129,7 +127,7 @@ struct LEVELDB_EXPORT Options { // Option: 表示选项
 
   // Compression level for zstd.
   // Currently only the range [-5,22] is supported. Default is 1.
-  int zstd_compression_level = 1;
+  int zstd_compression_level = 1;// 设置 zstd 压缩等级
 
   // EXPERIMENTAL: If true, append to existing MANIFEST and log files
   // when a database is opened.  This can significantly speed up open.
@@ -145,19 +143,11 @@ struct LEVELDB_EXPORT Options { // Option: 表示选项
 
 // Options that control read operations
 struct LEVELDB_EXPORT ReadOptions {
-  // If true, all data read from underlying storage will be
-  // verified against corresponding checksums.
-  bool verify_checksums = false;
+  bool verify_checksums = false; // 判断从底层存储中读取时,是否需要验证checksums
 
-  // Should the data read for this iteration be cached in memory?
-  // Callers may wish to set this field to false for bulk scans.
-  bool fill_cache = true;
+  bool fill_cache = true; // 判断当前的数据是否需要被缓存到内存中
 
-  // If "snapshot" is non-null, read as of the supplied snapshot
-  // (which must belong to the DB that is being read and which must
-  // not have been released).  If "snapshot" is null, use an implicit
-  // snapshot of the state at the beginning of this read operation.
-  const Snapshot* snapshot = nullptr;
+  const Snapshot* snapshot = nullptr;// 当前读取时是否有快照存储
 };
 
 // Options that control write operations
@@ -178,7 +168,7 @@ struct LEVELDB_EXPORT WriteOptions {
   // crash semantics as the "write()" system call.  A DB write
   // with sync==true has similar crash semantics to a "write()"
   // system call followed by "fsync()".
-  bool sync = false;
+  bool sync = false;// 判断是否同步
 };
 
 }  // namespace leveldb

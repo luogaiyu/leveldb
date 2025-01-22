@@ -21,60 +21,50 @@ struct ReadOptions;
 class TableCache;
 // 这个代码定义了一个名为 Table 的类，用于表示 LevelDB 中的一个持久化、不可变的键值对存储表。
 // 它提供了打开表、创建迭代器、获取键的近似文件偏移量等功能，并且支持多线程安全访问。
-// A Table is a sorted map from strings to strings.  Tables are
-// immutable and persistent.  A Table may be safely accessed from
-// multiple threads without external synchronization.
 class LEVELDB_EXPORT Table {
  public:
-  // Attempt to open the table that is stored in bytes [0..file_size)
-  // of "file", and read the metadata entries necessary to allow
-  // retrieving data from the table.
-  //
-  // If successful, returns ok and sets "*table" to the newly opened
-  // table.  The client should delete "*table" when no longer needed.
-  // If there was an error while initializing the table, sets "*table"
-  // to nullptr and returns a non-ok status.  Does not take ownership of
-  // "*source", but the client must ensure that "source" remains live
-  // for the duration of the returned table's lifetime.
-  //
-  // *file must remain live while this Table is in use.
+ // 表读取方法
   static Status Open(const Options& options, RandomAccessFile* file,
                      uint64_t file_size, Table** table);
 
+  /**
+   * 赋值和克隆方法删除, ban掉
+   */
   Table(const Table&) = delete;
   Table& operator=(const Table&) = delete;
-
+  // 析构函数
   ~Table();
-
-  // Returns a new iterator over the table contents.
-  // The result of NewIterator() is initially invalid (caller must
-  // call one of the Seek methods on the iterator before using it).
+ /**
+  * 返回一个新的迭代器, 用于遍历表的内容
+  * NewIterator 最初返回的内容是无效的, 必须调用某个seek方法
+  */
   Iterator* NewIterator(const ReadOptions&) const;
 
-  // Given a key, return an approximate byte offset in the file where
-  // the data for that key begins (or would begin if the key were
-  // present in the file).  The returned value is in terms of file
-  // bytes, and so includes effects like compression of the underlying data.
-  // E.g., the approximate offset of the last key in the table will
-  // be close to the file length.
+  /**
+   * 返回的值是以文件字节为单位的，因此包括了底层数据的压缩等影响。
+   * 例如，表中最后一个键的大致偏移量将接近文件长度。
+   * 给定一个键，返回该键在文件中数据开始处的大致字节偏移量（或者如果该键存在于文件中的话，其数据开始处的大致字节偏移量）。 
+   * */ 
   uint64_t ApproximateOffsetOf(const Slice& key) const;
 
  private:
-  friend class TableCache;
-  struct Rep;
+  friend class TableCache; // 使用友元机制 来定义 表缓存, 主要的目的是 为了让 TableCache 类型 能够访问 table中的所有私有变量
+  struct Rep;// 使用 Rep = Representation (表示或实现)
 
-  static Iterator* BlockReader(void*, const ReadOptions&, const Slice&);
+  static Iterator* BlockReader(void*, const ReadOptions&, const Slice&);// block是存储系统中的一环
 
   explicit Table(Rep* rep) : rep_(rep) {}
 
-  // Calls (*handle_result)(arg, ...) with the entry found after a call
-  // to Seek(key).  May not make such a call if filter policy says
-  // that key is not present.
+  /**
+   * 调用 (*handle_result)(arg, ...)，传入在调用 Seek(key) 后找到的条目。
+   * 如果过滤策略表明该键不存在，则可能不会进行这样的调用。
+   */
   Status InternalGet(const ReadOptions&, const Slice& key, void* arg,
                      void (*handle_result)(void* arg, const Slice& k,
                                            const Slice& v));
-
+  // 读取元数据信息
   void ReadMeta(const Footer& footer);
+  // 读取过滤信息
   void ReadFilter(const Slice& filter_handle_value);
 
   Rep* const rep_;

@@ -47,13 +47,13 @@ namespace leveldb {
     last_key_：存储上一个键，用于前缀压缩。
    */
 
-BlockBuilder::BlockBuilder(const Options* options)
+BlockBuilder::BlockBuilder(const Options* options) // 
     : options_(options), restarts_(), counter_(0), finished_(false) { // 前向声明 Options 结构体，表示 LevelDB 的选项配置。
   assert(options->block_restart_interval >= 1);
   restarts_.push_back(0);  // First restart point is at offset 0
 }
 
-void BlockBuilder::Reset() {// 重置 BlockBuilder 对象，清空所有状态。
+void BlockBuilder::Reset() { // 重置 BlockBuilder 对象，清空所有状态。
   buffer_.clear();
   restarts_.clear();
   restarts_.push_back(0);  // First restart point is at offset 0
@@ -62,7 +62,7 @@ void BlockBuilder::Reset() {// 重置 BlockBuilder 对象，清空所有状态�
   last_key_.clear();
 }
 
-size_t BlockBuilder::CurrentSizeEstimate() const {// 当前大小估计
+size_t BlockBuilder::CurrentSizeEstimate() const { // 当前大小估计
 
   return (buffer_.size() +                       // Raw data buffer
           restarts_.size() * sizeof(uint32_t) +  // Restart array

@@ -34,31 +34,26 @@
 #include "util/coding.h"
 #include "util/logging.h"
 #include "util/mutexlock.h"
-/**
- * 这段代码实现了 LevelDB 数据库的核心功能，包括数据库的创建、恢复、写入、压缩、属性获取等。通过这些功能，LevelDB 能够高效地管理和操作大量的键值对数据。理解这些代码有助于深入掌握 LevelDB 的内部机制和优化技巧。
- * 涉及到 数据库的创建恢复写入压缩等等关键功能
- */
 namespace leveldb {
 
-// 非表缓存文件的数量
+// 非表缓存文件的数量: 不包含表结构数据的缓存文件。这些文件可能包含其他类型的数据，如配置信息、日志记录、中间计算结果等
 const int kNumNonTableCacheFiles = 10;
 
 // Information kept for every waiting writer
 // struct 的默认是public, class的成员默认是 private
-// 我清楚了, 就是说 加了 explicit 为了防止创建的时候调用  write 方法 是传递的参数 被转换成 port::Mutex* , 防止出现debug的困难
 struct DBImpl::Writer {
   //explicit: 用来防止隐式转换, 就是比如要传入特定的对象
   explicit Writer(port::Mutex* mu) // 这里传入的是指针
       : batch(nullptr), sync(false), done(false), cv(mu) {}
 
-  Status status;
-  WriteBatch* batch;
-  bool sync;
-  bool done;
-  port::CondVar cv;
+  Status status;     // 操作状态
+  WriteBatch* batch; // 批写入
+  bool sync;         // 同步
+  bool done;         // 是否完成
+  port::CondVar cv;  // 多线程 标识, todo: 搞清楚在什么情况下, 需要保证多线程一致性
 };
 
-struct DBImpl::CompactionState {// 创建合并的状态
+struct DBImpl::CompactionState { // 创建合并的状态
   // Files produced by compaction
   struct Output {
     uint64_t number;
@@ -77,10 +72,6 @@ struct DBImpl::CompactionState {// 创建合并的状态
 
   Compaction* const compaction;
 
-  // Sequence numbers < smallest_snapshot are not significant since we
-  // will never have to service a snapshot below smallest_snapshot.
-  // Therefore if we have seen a sequence number S <= smallest_snapshot,
-  // we can drop all entries for the same key with sequence numbers < S.
   SequenceNumber smallest_snapshot;
 
   std::vector<Output> outputs;
@@ -107,17 +98,15 @@ Options SanitizeOptions(const std::string& dbname,
   result.comparator = icmp;
   result.filter_policy = (src.filter_policy != nullptr) ? ipolicy : nullptr;// 设置过滤策略
   ClipToRange(&result.max_open_files, 64 + kNumNonTableCacheFiles, 50000);
-  ClipToRange(&result.write_buffer_size, 64 << 10, 1 << 30);// 限制 write的缓存的大小
-  ClipToRange(&result.max_file_size, 1 << 20, 1 << 30); // 限制 最大文件的大小
-  ClipToRange(&result.block_size, 1 << 10, 4 << 20); // 限制  block 的大小
+  ClipToRange(&result.write_buffer_size, 64 << 10, 1 << 30);                // 限制 write的缓存的大小
+  ClipToRange(&result.max_file_size, 1 << 20, 1 << 30);                     // 限制 最大文件的大小
+  ClipToRange(&result.block_size, 1 << 10, 4 << 20);                        // 限制  block 的大小
   if (result.info_log == nullptr) {
-    // Open a log file in the same directory as the db
-    src.env->CreateDir(dbname);  // In case it does not exist
+    src.env->CreateDir(dbname);  // 防止
     src.env->RenameFile(InfoLogFileName(dbname), OldInfoLogFileName(dbname));// 删除文件 
     Status s = src.env->NewLogger(InfoLogFileName(dbname), &result.info_log);// 创建新的日志
     if (!s.ok()) {
-      // No place suitable for logging
-      result.info_log = nullptr;
+      result.info_log = nullptr;// 设置成空指针
     }
   }
   if (result.block_cache == nullptr) {
@@ -125,12 +114,17 @@ Options SanitizeOptions(const std::string& dbname,
   }
   return result;
 }
-
+/**
+ * santized_options: 表示当前已经处理过的选项
+ */
 static int TableCacheSize(const Options& sanitized_options) {
   // Reserve ten files or so for other uses and give the rest to TableCache.
-  return sanitized_options.max_open_files - kNumNonTableCacheFiles;
+  return sanitized_options.max_open_files - kNumNonTableCacheFiles;// 
 }
-// 构造函数：初始化数据库的各种资源，包括环境、比较器、过滤策略、选项、表缓存等。
+/**
+ * raw_options: 原始选项
+ * dbname: 数据库名称
+ */
 DBImpl::DBImpl(const Options& raw_options, const std::string& dbname)
     : env_(raw_options.env),
       internal_comparator_(raw_options.comparator),
@@ -164,10 +158,10 @@ DBImpl::~DBImpl() {
   while (background_compaction_scheduled_) {
     background_work_finished_signal_.Wait();// 一个循环中等待, 直到所有后台压缩任务完成
   }
-  mutex_.Unlock();
+  mutex_.Unlock();// 多线程解锁
 
   if (db_lock_ != nullptr) {
-    env_->UnlockFile(db_lock_);
+    env_->UnlockFile(db_lock_); // 
   }
 
   delete versions_;
@@ -191,7 +185,7 @@ Status DBImpl::NewDB() {
   new_db.SetComparatorName(user_comparator()->Name());
   new_db.SetLogNumber(0);// 设置日志编号为 0 表示没有日志文件
   new_db.SetNextFile(2); // 设置下一个文件编号 为2, 表示下一个可用的文件编号
-  new_db.SetLastSequence(0);
+  new_db.SetLastSequence(0);// 设置最后一个序列化文件的索引
 
   const std::string manifest = DescriptorFileName(dbname_, 1);
   WritableFile* file;
@@ -203,9 +197,9 @@ Status DBImpl::NewDB() {
     log::Writer log(file);
     std::string record;
     new_db.EncodeTo(&record);
-    s = log.AddRecord(record);
+    s = log.AddRecord(record);// 
     if (s.ok()) {
-      s = file->Sync();
+      s = file->Sync();//
     }
     if (s.ok()) {
       s = file->Close();
@@ -214,7 +208,7 @@ Status DBImpl::NewDB() {
   delete file;
   if (s.ok()) {
     // Make "CURRENT" file that points to the new manifest file.
-    s = SetCurrentFile(env_, dbname_, 1);
+    s = SetCurrentFile(env_, dbname_, 1);// 创建当前的文件
   } else {
     env_->RemoveFile(manifest);
   }
@@ -331,7 +325,7 @@ Status DBImpl::Recover(VersionEdit* edit, bool* save_manifest) {
 /**
  * 恢复数据库, 包括获取当前文件, 恢复版本集, 恢复日志文件
  */
-  s = versions_->Recover(save_manifest);
+  s = versions_->Recover(save_manifest);// 恢复版本, 其中 manifest: 表示版本的文件
   if (!s.ok()) {
     return s;
   }
@@ -344,8 +338,8 @@ Status DBImpl::Recover(VersionEdit* edit, bool* save_manifest) {
   // Note that PrevLogNumber() is no longer used, but we pay
   // attention to it in case we are recovering a database
   // produced by an older version of leveldb.
-  const uint64_t min_log = versions_->LogNumber();
-  const uint64_t prev_log = versions_->PrevLogNumber();
+  const uint64_t min_log = versions_->LogNumber();// 当前日志的标志数
+  const uint64_t prev_log = versions_->PrevLogNumber(); // 当前日志的前数
   std::vector<std::string> filenames;
   s = env_->GetChildren(dbname_, &filenames);
   if (!s.ok()) {
@@ -526,7 +520,7 @@ Status DBImpl::WriteLevel0Table(MemTable* mem, VersionEdit* edit,
   Status s;
   {
     mutex_.Unlock();
-    s = BuildTable(dbname_, env_, options_, table_cache_, iter, &meta);
+    s = BuildTable(dbname_, env_, options_, table_cache_, iter, &meta);// 创建表对象
     mutex_.Lock();
   }
 

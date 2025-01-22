@@ -16,69 +16,57 @@
 #include "util/coding.h"
 
 namespace leveldb {
-/**
- * Table::Rep 结构体用于存储 Table 的内部状态。
-析构函数负责释放资源。
-options 存储选项。
-status 存储状态。
-file 指向随机访问文件。
-cache_id 是缓存的唯一标识符。
-filter 和 filter_data 用于过滤块。
-metaindex_handle 存储元索引块的句柄。
-index_block 存储索引块。
-
- */
-struct Table::Rep {// Table::Rep 结构体
-  ~Rep() {
-    delete filter;
+struct Table::Rep {// Table::Rep : 主要保存一些存储表的信息
+  ~Rep() {// 析构函数
+    delete filter; //
     delete[] filter_data;
     delete index_block;
   }
 
-  Options options;
-  Status status;
-  RandomAccessFile* file;
-  uint64_t cache_id;
-  FilterBlockReader* filter;
-  const char* filter_data;
+  Options options;// 存储表的各种配置选项
+  Status status; // 当前表的配置选项, 用于表示操作的状态, 通常是成功或失败的原因
+  RandomAccessFile* file;// 表示对应的文件
+  uint64_t cache_id; // 用于标识 缓存中的唯一ID
+  FilterBlockReader* filter; // 过滤块, 用于快速排除不包含特性数据块
+  const char* filter_data; // 存储过滤块的世纪数据
 
-  BlockHandle metaindex_handle;  // Handle to metaindex_block: saved from footer
-  Block* index_block;
+  BlockHandle metaindex_handle;  // 元素引块的句柄, 主要包含关于 表的元数据信息
+  Block* index_block;// 索引块: 快速定位表中的数据块
 };
+
+// 用于打开表(sstable)文件, 并初始化Table对象
 /**
- * Table::ReadMeta 方法用于读取元信息块。
-检查是否有过滤策略。
-读取元索引块。
-查找过滤块的键并读取过滤块。
+ * options: 配置选项
+ * file: 任意读取文件引用
+ * size: 文件大小: 什么的文件大小? todo
  */
 Status Table::Open(const Options& options, RandomAccessFile* file,
-                   uint64_t size, Table** table) {
+                   uint64_t size, Table** table) { 
   *table = nullptr;
-  if (size < Footer::kEncodedLength) {
+  if (size < Footer::kEncodedLength) {// 当前大小 < 编码长度
     return Status::Corruption("file is too short to be an sstable");
   }
-
+  // 初始化 变量
   char footer_space[Footer::kEncodedLength];
-  Slice footer_input;
+  Slice footer_input;// 存储目标
+  // 通过 RAF(任意读取文件)的句柄 读取对应的数据
   Status s = file->Read(size - Footer::kEncodedLength, Footer::kEncodedLength,
-                        &footer_input, footer_space);
+                        &footer_input, footer_space);// 文件读取, 需要传入几个参数, 
+  if (!s.ok()) return s;// 如果读取不成功就返回
+
+  Footer footer;// todo: 如果设置 footer的参数值
+  s = footer.DecodeFrom(&footer_input);// 对footer_input解码
   if (!s.ok()) return s;
 
-  Footer footer;
-  s = footer.DecodeFrom(&footer_input);
-  if (!s.ok()) return s;
-
-  // Read the index block
   BlockContents index_block_contents;
   ReadOptions opt;
-  if (options.paranoid_checks) {
+  if (options.paranoid_checks) {// options.paranoid_checks: 表示是否严格模式
     opt.verify_checksums = true;
   }
+  // 读取块信息
   s = ReadBlock(file, opt, footer.index_handle(), &index_block_contents);
-
+  // 前置信息已经读取好了
   if (s.ok()) {
-    // We've successfully read the footer and the index block: we're
-    // ready to serve requests.
     Block* index_block = new Block(index_block_contents);
     Rep* rep = new Table::Rep;
     rep->options = options;
@@ -94,10 +82,11 @@ Status Table::Open(const Options& options, RandomAccessFile* file,
 
   return s;
 }
-
+// 读取元数据信息
 void Table::ReadMeta(const Footer& footer) {
+  // 如果 filter_policy 为空, 不需要需要 元数据信息
   if (rep_->options.filter_policy == nullptr) {
-    return;  // Do not need any metadata
+    return;  
   }
 
   // TODO(sanjay): Skip this if footer.metaindex_handle() size indicates
@@ -111,6 +100,7 @@ void Table::ReadMeta(const Footer& footer) {
     // Do not propagate errors since meta info is not needed for operation
     return;
   }
+  
   Block* meta = new Block(contents);
 
   Iterator* iter = meta->NewIterator(BytewiseComparator());

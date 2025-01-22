@@ -18,7 +18,7 @@ class Comparator;
 class Block {
  public:
   // Initialize the block with the specified contents.
-  // Block 类的构造函数，接受一个 BlockContents 对象的引用。explicit 关键字防止隐式类型转换。 
+  // Block 类的构造函数，接受一个 BlockContents 对象的引用。explicit 关键字防止隐式类型转换。 保证传入的 contents 对象确实是 BlockContents
   explicit Block(const BlockContents& contents);
 
   Block(const Block&) = delete;
@@ -32,7 +32,7 @@ class Block {
  private:
   class Iter;
 
-  uint32_t NumRestarts() const;
+  uint32_t NumRestarts() const;// 这里的重启点指的是什么?
 /**
  * 
 data_：指向块数据的指针。

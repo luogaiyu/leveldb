@@ -35,10 +35,12 @@ class LEVELDB_EXPORT Iterator {
 
   // An iterator is either positioned at a key/value pair, or
   // not valid.  This method returns true iff the iterator is valid.
+  // 
   virtual bool Valid() const = 0;
 
   // Position at the first key in the source.  The iterator is Valid()
   // after this call iff the source is not empty.
+  // s
   virtual void SeekToFirst() = 0;
 
   // Position at the last key in the source.  The iterator is

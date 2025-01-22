@@ -45,7 +45,7 @@
 namespace leveldb {
 namespace port {
 
-class CondVar;
+class CondVar;// 前置声明 降低编译
 
 // Thinly wraps std::mutex.
 class LOCKABLE Mutex {
@@ -58,7 +58,7 @@ class LOCKABLE Mutex {
 
   void Lock() EXCLUSIVE_LOCK_FUNCTION() { mu_.lock(); }
   void Unlock() UNLOCK_FUNCTION() { mu_.unlock(); }
-  void AssertHeld() ASSERT_EXCLUSIVE_LOCK() {}
+  void AssertHeld() ASSERT_EXCLUSIVE_LOCK() {}// 表示编译的时候 对持有锁的情况进行检查
 
  private:
   friend class CondVar;

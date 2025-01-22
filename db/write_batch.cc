@@ -40,7 +40,7 @@ void WriteBatch::Clear() {// Clear 方法清空 rep_ 并重新设置为 kHeader 
 size_t WriteBatch::ApproximateSize() const { return rep_.size(); }// ApproximateSize 方法返回 WriteBatch 的近似大小（以字节为单位）
 
 Status WriteBatch::Iterate(Handler* handler) const {
-  Slice input(rep_);
+  Slice input(rep_);// Slice: input
   if (input.size() < kHeader) {
     return Status::Corruption("malformed WriteBatch (too small)");
   }

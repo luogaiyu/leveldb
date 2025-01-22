@@ -5,14 +5,14 @@
 #include "leveldb/iterator.h"
 
 namespace leveldb {
-
+// 组成 block: iterator 链表迭代器
 Iterator::Iterator() {
   cleanup_head_.function = nullptr;
   cleanup_head_.next = nullptr;
 }
 
 Iterator::~Iterator() {
-  if (!cleanup_head_.IsEmpty()) {
+  if (!cleanup_head_.IsEmpty()) {// 看起来是销毁头节点的操作
     cleanup_head_.Run();
     for (CleanupNode* node = cleanup_head_.next; node != nullptr;) {
       node->Run();
@@ -38,8 +38,9 @@ void Iterator::RegisterCleanup(CleanupFunction func, void* arg1, void* arg2) {
   node->arg2 = arg2;
 }
 
+// 匿名空间
 namespace {
-
+// 空迭代器: 创建
 class EmptyIterator : public Iterator {
  public:
   EmptyIterator(const Status& s) : status_(s) {}
