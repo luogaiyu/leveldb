@@ -30,7 +30,7 @@ class FilterPolicy;
 class FilterBlockBuilder {
  public:
   explicit FilterBlockBuilder(const FilterPolicy*);
-
+  // 防止出现内存泄漏 所以提前禁止了 赋值和克隆操作
   FilterBlockBuilder(const FilterBlockBuilder&) = delete;
   FilterBlockBuilder& operator=(const FilterBlockBuilder&) = delete;
 

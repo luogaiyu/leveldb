@@ -46,7 +46,7 @@ class LEVELDB_EXPORT Cache {
  public:
   Cache() = default;// 使用默认的构建的方法
 /**
- * 数据
+ * 禁止使用赋值和克隆方法
  */
   Cache(const Cache&) = delete;
   Cache& operator=(const Cache&) = delete;

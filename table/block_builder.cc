@@ -36,16 +36,6 @@
 #include "util/coding.h"
 
 namespace leveldb {
-  /**
-   * 
-    BlockBuilder 类的主要成员变量和方法：
-    options_：存储选项，包括块重启间隔等。
-    restarts_：存储重启点的偏移量。
-    buffer_：存储块的数据。
-    counter_：记录当前块中添加的键值对数量。
-    finished_：表示块是否已经完成。
-    last_key_：存储上一个键，用于前缀压缩。
-   */
 
 BlockBuilder::BlockBuilder(const Options* options) // 
     : options_(options), restarts_(), counter_(0), finished_(false) { // 前向声明 Options 结构体，表示 LevelDB 的选项配置。
@@ -78,24 +68,17 @@ Slice BlockBuilder::Finish() {
   finished_ = true;
   return Slice(buffer_);
 }
-/**
- * 
-添加键值对到块中。
-计算当前键与上一个键的共享前缀长度。
-如果达到重启间隔，则添加一个新的重启点。
-将共享前缀长度、非共享部分长度和值长度编码到缓冲区。
-将键的非共享部分和值附加到缓冲区。
-更新状态，包括 last_key_ 和 counter_。
- */
+
 void BlockBuilder::Add(const Slice& key, const Slice& value) {
   Slice last_key_piece(last_key_);
+  // 
   assert(!finished_);
   assert(counter_ <= options_->block_restart_interval);
   assert(buffer_.empty()  // No values yet?
          || options_->comparator->Compare(key, last_key_piece) > 0);
+  // 
   size_t shared = 0;
   if (counter_ < options_->block_restart_interval) {
-    // See how much sharing to do with previous string
     const size_t min_length = std::min(last_key_piece.size(), key.size());
     while ((shared < min_length) && (last_key_piece[shared] == key[shared])) {
       shared++;
@@ -105,6 +88,7 @@ void BlockBuilder::Add(const Slice& key, const Slice& value) {
     restarts_.push_back(buffer_.size());
     counter_ = 0;
   }
+  // 
   const size_t non_shared = key.size() - shared;
 
   // Add "<shared><non_shared><value_size>" to buffer_

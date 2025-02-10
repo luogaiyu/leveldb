@@ -18,14 +18,12 @@
 
 #include "leveldb/export.h"
 #include "leveldb/slice.h"
-// 这段代码定义了 LevelDB 中的 Status 类，它用于封装操作的结果，可以表示成功或错误的状态，
-// 并附带错误信息。Status 类在 LevelDB 中被广泛使用，用于表示各种操作（如读取、写入等）是否成功，并且在发生错误时能够提供具体的错误类型和信息。
+// 记录 LevelDB 中的状态
 namespace leveldb {
 
 class LEVELDB_EXPORT Status {
  public:
-  // Create a success status.
-  Status() noexcept : state_(nullptr) {}
+  Status() noexcept : state_(nullptr) {} // noexcept: 用来透传 不报错的信息给到编译器
   ~Status() { delete[] state_; }
 
   Status(const Status& rhs);
@@ -98,6 +96,14 @@ class LEVELDB_EXPORT Status {
   //    state_[0..3] == length of message
   //    state_[4]    == code
   //    state_[5..]  == message
+  /**
+   * Status 分两种情况
+   * 1. 正常状态 status_ is null
+   * 2. 其他状态
+   *          state_[0..3] == message 长度
+              state_[4]    == message code
+              state_[5..]  == message
+   */
   const char* state_;
 };
 

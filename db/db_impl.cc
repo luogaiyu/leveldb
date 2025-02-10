@@ -126,9 +126,9 @@ static int TableCacheSize(const Options& sanitized_options) {
  * dbname: 数据库名称
  */
 DBImpl::DBImpl(const Options& raw_options, const std::string& dbname)
-    : env_(raw_options.env),
-      internal_comparator_(raw_options.comparator),
-      internal_filter_policy_(raw_options.filter_policy),
+    : env_(raw_options.env),// 环境参数
+      internal_comparator_(raw_options.comparator),// 设置内部key的排序
+      internal_filter_policy_(raw_options.filter_policy), // 设置内部key的过滤策略
       options_(SanitizeOptions(dbname, &internal_comparator_,
                                &internal_filter_policy_, raw_options)),
       owns_info_log_(options_.info_log != raw_options.info_log),
@@ -505,12 +505,14 @@ Status DBImpl::RecoverLogFile(uint64_t log_number, bool last_log,
 
   return status;
 }
-
+/*
+ * 这个方法用来写入Level0等级的表
+ */
 Status DBImpl::WriteLevel0Table(MemTable* mem, VersionEdit* edit,
                                 Version* base) {
   mutex_.AssertHeld();
   const uint64_t start_micros = env_->NowMicros();
-  FileMetaData meta;
+  FileMetaData meta;// 
   meta.number = versions_->NewFileNumber();
   pending_outputs_.insert(meta.number);
   Iterator* iter = mem->NewIterator();
@@ -520,18 +522,18 @@ Status DBImpl::WriteLevel0Table(MemTable* mem, VersionEdit* edit,
   Status s;
   {
     mutex_.Unlock();
-    s = BuildTable(dbname_, env_, options_, table_cache_, iter, &meta);// 创建表对象
+    s = BuildTable(dbname_, env_, options_, table_cache_, iter, &meta);// 通过BuildTable方法构建 Table对象
     mutex_.Lock();
   }
 
-  Log(options_.info_log, "Level-0 table #%llu: %lld bytes %s",
+  Log(options_.info_log, "Level-0 table #%llu: %lld bytes %s", 
       (unsigned long long)meta.number, (unsigned long long)meta.file_size,
-      s.ToString().c_str());
+      s.ToString().c_str());// %llu 占位符号: long long unsigned 长整型无符号类型
   delete iter;
   pending_outputs_.erase(meta.number);
 
   // Note that if file_size is zero, the file has been deleted and
-  // should not be added to the manifest.
+  // should not be added to the manifest. 
   int level = 0;
   if (s.ok() && meta.file_size > 0) {
     const Slice min_user_key = meta.smallest.user_key();
@@ -1232,35 +1234,23 @@ Status DBImpl::Put(const WriteOptions& o, const Slice& key, const Slice& val) {
 Status DBImpl::Delete(const WriteOptions& options, const Slice& key) {
   return DB::Delete(options, key);
 }
-// 写入操作, 处理写入请求, 包括将写操作加入队列, 等待执行, 实际写入日志和内存表
+/**
+ * @brief 写入操作, 处理写入请求, 包括将写操作加入队列, 等待执行, 实际写入日志和内存表
+ * 
+ * @param options : 写入参数控制
+ * @param updates : 
+ * @return Status 
+ */
 Status DBImpl::Write(const WriteOptions& options, WriteBatch* updates) {
-  Writer w(&mutex_);
+  Writer w(&mutex_);   // 使用mutex 来实现写入的多线程一致性
   w.batch = updates;
-  w.sync = options.sync;
-  w.done = false;
+  w.sync = options.sync; 
+  w.done = false;      // 当前的写入操作 没有完成
 
-//-------------------------------------------------------
-// 多线程环境管理写操作队列, 并确保写操作的按顺序执行
-// 代码逻辑
-// 加锁：
-
-// 通过 MutexLock l(&mutex_); 加锁，确保临界区的互斥访问。
-// 加入队列：
-
-// 将当前写操作 w 的指针添加到 writers_ 队列的末尾。
-// 等待条件：
-
-// 进入一个循环，等待当前写操作 w 变为队列的前端，或者 w.done 变为 true。
-// 如果 w 不是队列的前端且未完成，调用 w.cv.Wait() 使当前线程进入等待状态。
-// 检查完成状态：
-
-// 如果 w.done 为 true，返回 w.status。
-
-  MutexLock l(&mutex_);
-//
+  MutexLock l(&mutex_);// 对当前操作进行上锁
   writers_.push_back(&w);
   while (!w.done && &w != writers_.front()) {
-    w.cv.Wait();// 多线程写入, 加锁 写出
+    w.cv.Wait();// 避免竞争
   }
   if (w.done) {
     return w.status;
@@ -1536,14 +1526,26 @@ void DBImpl::GetApproximateSizes(const Range* range, int n, uint64_t* sizes) {
   v->Unref();
 }
 
-// Default implementations of convenience methods that subclasses of DB
-// can call if they wish
+/**
+  * @brief 数据库写入方法
+  * 
+  * @param opt : 写入过程中的参数
+  * @param key : 数据的key键值对
+  * @param value : 数据的value
+  * @return Status : 操作状态
+  */
 Status DB::Put(const WriteOptions& opt, const Slice& key, const Slice& value) {
   WriteBatch batch;
   batch.Put(key, value);
   return Write(opt, &batch);
 }
-
+/**
+ * @brief 
+ * 
+ * @param opt 
+ * @param key 
+ * @return Status 
+ */
 Status DB::Delete(const WriteOptions& opt, const Slice& key) {
   WriteBatch batch;
   batch.Delete(key);

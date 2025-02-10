@@ -31,7 +31,7 @@ namespace leveldb {
 
 class VersionSet;
 
-struct FileMetaData {
+struct FileMetaData { // 文件原始信息
   FileMetaData() : refs(0), allowed_seeks(1 << 30), file_size(0) {}
 
   int refs; // 引用次数

@@ -68,8 +68,13 @@ void PutVarint64(std::string* dst, uint64_t v) {//PutVarint64 函数将 64 位�
   char* ptr = EncodeVarint64(buf, v);
   dst->append(buf, ptr - buf);
 }
-
-void PutLengthPrefixedSlice(std::string* dst, const Slice& value) {//PutLengthPrefixedSlice 函数将 Slice 的长度和内容编码为长度前缀的字节序列，并将其追加到 std::string 中
+/**
+ * @brief 
+ * 
+ * @param dst 
+ * @param value 
+ */
+void PutLengthPrefixedSlice(std::string* dst, const Slice& value) {
   PutVarint32(dst, value.size());
   dst->append(value.data(), value.size());
 }

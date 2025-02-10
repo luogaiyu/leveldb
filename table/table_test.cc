@@ -3,7 +3,6 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include "leveldb/table.h"
-
 #include <map>
 #include <string>
 
@@ -412,13 +411,15 @@ static const TestArgs kTestArgList[] = {
     {DB_TEST, true, 16},
 };
 static const int kNumTestArgs = sizeof(kTestArgList) / sizeof(kTestArgList[0]);
-
+// 通过继承 Test类 提供最底层的测试抽象
 class Harness : public testing::Test {
  public:
   Harness() : constructor_(nullptr) {}
-
+/**
+ * args: 
+ */
   void Init(const TestArgs& args) {
-    delete constructor_;
+    delete constructor_;// 删除当前的constructor
     constructor_ = nullptr;
     options_ = Options();
 
@@ -619,6 +620,7 @@ class Harness : public testing::Test {
 };
 
 // Test empty table/block.
+// 测试空表/块
 TEST_F(Harness, Empty) {
   for (int i = 0; i < kNumTestArgs; i++) {
     Init(kTestArgList[i]);
@@ -764,9 +766,9 @@ static bool Between(uint64_t val, uint64_t low, uint64_t high) {
   }
   return result;
 }
-
+// 测试 Table 在某个表中的偏移量的估计值
 TEST(TableTest, ApproximateOffsetOfPlain) {
-  TableConstructor c(BytewiseComparator());
+  TableConstructor c(BytewiseComparator());// 根据 比较逻辑 创建一个Table构建器
   c.Add("k01", "hello");
   c.Add("k02", "hello2");
   c.Add("k03", std::string(10000, 'x'));
@@ -774,11 +776,12 @@ TEST(TableTest, ApproximateOffsetOfPlain) {
   c.Add("k05", std::string(300000, 'x'));
   c.Add("k06", "hello3");
   c.Add("k07", std::string(100000, 'x'));
+
   std::vector<std::string> keys;
   KVMap kvmap;
   Options options;
-  options.block_size = 1024;
-  options.compression = kNoCompression;
+  options.block_size = 1024; // 设置块的大小是1024
+  options.compression = kNoCompression; // 设置压缩方式是no
   c.Finish(options, &keys, &kvmap);
 
   ASSERT_TRUE(Between(c.ApproximateOffsetOf("abc"), 0, 0));

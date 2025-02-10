@@ -12,15 +12,14 @@
 // 
 namespace leveldb {
 
-class Block;
-class BlockHandle;
-class Footer;
-struct Options;
+class Block; //Block: 存储数据一个实体
+class BlockHandle; // 操控Block 的一个句柄
+class Footer; // 尾部信息
+struct Options; // 
 class RandomAccessFile;
 struct ReadOptions;
-class TableCache;
-// 这个代码定义了一个名为 Table 的类，用于表示 LevelDB 中的一个持久化、不可变的键值对存储表。
-// 它提供了打开表、创建迭代器、获取键的近似文件偏移量等功能，并且支持多线程安全访问。
+class TableCache;//缓存
+
 class LEVELDB_EXPORT Table {
  public:
  // 表读取方法

@@ -3,6 +3,7 @@ leveldb
 
 _Jeff Dean, Sanjay Ghemawat_
 
+levelDB 代码库 提供了一个kv持久化存储
 The leveldb library provides a persistent key value store. Keys and values are
 arbitrary byte arrays.  The keys are ordered within the key value store
 according to a user-specified comparator function.

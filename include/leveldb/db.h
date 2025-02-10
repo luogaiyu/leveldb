@@ -50,7 +50,7 @@ class LEVELDB_EXPORT DB {
   // Stores nullptr in *dbptr and returns a non-OK status on error.
   // Caller should delete *dbptr when it is no longer needed.
   static Status Open(const Options& options, const std::string& name,
-                     DB** dbptr);
+                     DB** dbptr);// 开启数据库
 
   DB() = default;
 
@@ -62,6 +62,14 @@ class LEVELDB_EXPORT DB {
   // Set the database entry for "key" to "value".  Returns OK on success,
   // and a non-OK status on error.
   // Note: consider setting options.sync = true.
+  /**
+   * @brief 通过 db 写入 key, value 数据, 可以通过 sync 参数来设置 当前的参数是
+   * 
+   * @param options 写入参数
+   * @param key 
+   * @param value 
+   * @return Status 返回当前参数的状态
+   */
   virtual Status Put(const WriteOptions& options, const Slice& key,
                      const Slice& value) = 0;
 
@@ -84,7 +92,7 @@ class LEVELDB_EXPORT DB {
   //
   // May return some other Status on an error.
   virtual Status Get(const ReadOptions& options, const Slice& key,
-                     std::string* value) = 0;
+                     std::string* value) = 0;// 通过key 来获取数据库中的值
 
   // Return a heap-allocated iterator over the contents of the database.
   // The result of NewIterator() is initially invalid (caller must
@@ -98,11 +106,11 @@ class LEVELDB_EXPORT DB {
   // this handle will all observe a stable snapshot of the current DB
   // state.  The caller must call ReleaseSnapshot(result) when the
   // snapshot is no longer needed.
-  virtual const Snapshot* GetSnapshot() = 0;
+  virtual const Snapshot* GetSnapshot() = 0;// 快照
 
   // Release a previously acquired snapshot.  The caller must not
   // use "snapshot" after this call.
-  virtual void ReleaseSnapshot(const Snapshot* snapshot) = 0;
+  virtual void ReleaseSnapshot(const Snapshot* snapshot) = 0;// 释放快照
 
   // DB implementations can export properties about their state
   // via this method.  If "property" is a valid property understood by this
@@ -131,7 +139,7 @@ class LEVELDB_EXPORT DB {
   //
   // The results may not include the sizes of recently written data.
   virtual void GetApproximateSizes(const Range* range, int n,
-                                   uint64_t* sizes) = 0;
+                                   uint64_t* sizes) = 0;// 获得估计的数据量
 
   // Compact the underlying storage for the key range [*begin,*end].
   // In particular, deleted and overwritten versions are discarded,
@@ -143,6 +151,11 @@ class LEVELDB_EXPORT DB {
   // end==nullptr is treated as a key after all keys in the database.
   // Therefore the following call will compact the entire database:
   //    db->CompactRange(nullptr, nullptr);
+  /**
+   * 1. 合并数据
+   * 2. 删除过期数据
+   * 3. 优化索引
+   */
   virtual void CompactRange(const Slice* begin, const Slice* end) = 0;
 };
 

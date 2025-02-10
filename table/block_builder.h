@@ -17,17 +17,19 @@ struct Options;
 class BlockBuilder {
  public:
   explicit BlockBuilder(const Options* options);
-
+  // 防止内存泄漏: 控制对象只能通过初始化函数创建, 不能通过克隆或者赋值操作
   BlockBuilder(const BlockBuilder&) = delete;
   BlockBuilder& operator=(const BlockBuilder&) = delete;
 
-  // Reset the contents as if the BlockBuilder was just constructed.
+  // 重置内容就像是 BlockBuilder 才刚创建一样
   void Reset();
 
-  // REQUIRES: Finish() has not been called since the last call to Reset().
-  // REQUIRES: key is larger than any previously added key
+
+  // 要求: Finsh() 没有被调用 从上次调用Reset() 方法之后
+  // 要求: key 要比之前添加的key 都大
   void Add(const Slice& key, const Slice& value);
 
+  // 完成 构建block和返回 slice()
   // Finish building the block and return a slice that refers to the
   // block contents.  The returned slice will remain valid for the
   // lifetime of this builder or until Reset() is called.
@@ -41,12 +43,12 @@ class BlockBuilder {
   bool empty() const { return buffer_.empty(); }
 
  private:
-  const Options* options_;
-  std::string buffer_;              // Destination buffer
+  const Options* options_;          // 选项: 用于提供参数控制block创建block的过程
+  std::string buffer_;              // 目标缓存: 使用string的原因, 提供了自动管理内存的方式? 不用再手动进行管理
   std::vector<uint32_t> restarts_;  // Restart points
-  int counter_;                     // Number of entries emitted since restart
-  bool finished_;                   // Has Finish() been called?
-  std::string last_key_;
+  int counter_;                     // 从重启开始有多少的entris被忽略了
+  bool finished_;                   // Finish() 这个方法是否已经被调用
+  std::string last_key_;            // 上一次操作的key
 };
 
 }  // namespace leveldb

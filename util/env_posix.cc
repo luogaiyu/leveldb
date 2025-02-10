@@ -55,8 +55,7 @@ constexpr const int kOpenBaseFlags = O_CLOEXEC;
 #else
 constexpr const int kOpenBaseFlags = 0;
 #endif  // defined(HAVE_O_CLOEXEC)
-
-constexpr const size_t kWritableFileBufferSize = 65536;// 表示 可写文件缓冲区的大小
+constexpr const size_t kWritableFileBufferSize = 65536;// 表示 可写文件缓冲区的大小 constexpr: 用于声明这段代码在编译的时候就已经确定了
 
 Status PosixError(const std::string& context, int error_number) {// PosixError: 生成错误的状态
   if (error_number == ENOENT) {
@@ -81,7 +80,7 @@ class Limiter {// 用于限制资源的使用
         acquires_allowed_(max_acquires) {
     assert(max_acquires >= 0);
   }
-
+  // 
   Limiter(const Limiter&) = delete;
   Limiter operator=(const Limiter&) = delete;
 
@@ -295,9 +294,8 @@ class PosixWritableFile final : public WritableFile {//用于写入文件
     size_t write_size = data.size();
     const char* write_data = data.data();
 
-    // Fit as much as possible into buffer.
     size_t copy_size = std::min(write_size, kWritableFileBufferSize - pos_);
-    std::memcpy(buf_ + pos_, write_data, copy_size);
+    std::memcpy(buf_ + pos_, write_data, copy_size);// 使用memcpy 这个方法把 数据添加到缓存中  
     write_data += copy_size;
     write_size -= copy_size;
     pos_ += copy_size;
@@ -305,18 +303,18 @@ class PosixWritableFile final : public WritableFile {//用于写入文件
       return Status::OK();
     }
 
-    // Can't fit in buffer, so need to do at least one write.
+    // 没有办法 适应缓存, 所以我们需要至少做一次写入
     Status status = FlushBuffer();
     if (!status.ok()) {
       return status;
     }
 
-    // Small writes go to buffer, large writes are written directly.
+    // 小的写入进入缓存, 大的缓存要被直接写入
     if (write_size < kWritableFileBufferSize) {
       std::memcpy(buf_, write_data, write_size);
       pos_ = write_size;
       return Status::OK();
-    }
+    } 
     return WriteUnbuffered(write_data, write_size);
   }
 
@@ -359,7 +357,8 @@ class PosixWritableFile final : public WritableFile {//用于写入文件
   }
 
   Status WriteUnbuffered(const char* data, size_t size) {
-    while (size > 0) {
+    while (size > 0) { 
+      // 这里的:: 表示调用全局的 write函数
       ssize_t write_result = ::write(fd_, data, size);
       if (write_result < 0) {
         if (errno == EINTR) {

@@ -2,16 +2,22 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 //
+
 // WriteBatch::rep_ :=
-//    sequence: fixed64
-//    count: fixed32
-//    data: record[count]
+//    sequence: fixed64   序列号
+//    count: fixed32      操作Record的个数
+//    data: record[count] 操作数据
+
+
 // record :=
-//    kTypeValue varstring varstring         |
-//    kTypeDeletion varstring
+//    kTypeValue varstring varstring          操作类型  key value
+//    kTypeDeletion varstring     
+
 // varstring :=
-//    len: varint32
-//    data: uint8[len]
+//    len: varint32 数据长度
+//    data: uint8[len] 数据
+
+
 
 #include "leveldb/write_batch.h"
 
@@ -26,7 +32,7 @@ namespace leveldb {
 // WriteBatch header has an 8-byte sequence number followed by a 4-byte count.
 static const size_t kHeader = 12;
 
-WriteBatch::WriteBatch() { Clear(); }// 初始化
+WriteBatch::WriteBatch() { Clear(); } // 初始化
 
 WriteBatch::~WriteBatch() = default;// 默认的析构函数。
 
@@ -94,7 +100,12 @@ SequenceNumber WriteBatchInternal::Sequence(const WriteBatch* b) {
 void WriteBatchInternal::SetSequence(WriteBatch* b, SequenceNumber seq) {
   EncodeFixed64(&b->rep_[0], seq);
 }
-
+/**
+ * @brief WriteBatch 本质上是一种批量写入的实现形式
+ * 
+ * @param key 
+ * @param value 
+ */
 void WriteBatch::Put(const Slice& key, const Slice& value) {
   WriteBatchInternal::SetCount(this, WriteBatchInternal::Count(this) + 1);
   rep_.push_back(static_cast<char>(kTypeValue));

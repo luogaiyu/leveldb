@@ -28,7 +28,6 @@ enum CompressionType {
 
 // Options to control the behavior of a database (passed to DB::Open)
 struct LEVELDB_EXPORT Options { // 数据库的配置项
-  // Create an Options object with default values for all fields.
   Options(); // 创建Options对象, 并为所有字段设置默认值
 
   // -------------------
@@ -42,7 +41,7 @@ struct LEVELDB_EXPORT Options { // 数据库的配置项
   // comparator provided to previous open calls on the same DB.
   const Comparator* comparator;
 
-  bool create_if_missing = false; // 如果 数据库是迷失的, 就会被创建
+  bool create_if_missing = false; // 如果 数据库不存在的, 就会被创建
 
   bool error_if_exists = false; // 如果 数据库已经存在就会抛出异常
 
@@ -51,7 +50,7 @@ struct LEVELDB_EXPORT Options { // 数据库的配置项
   // errors.  This may have unforeseen ramifications: for example, a
   // corruption of one DB entry may cause a large number of entries to
   // become unreadable or for the entire DB to become unopenable.
-  bool paranoid_checks = false; // 
+  bool paranoid_checks = false; // 偏执检查
 
   // Use the specified object to interact with the environment,
   // e.g. to read/write files, schedule background work, etc.

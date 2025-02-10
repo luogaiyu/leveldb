@@ -117,11 +117,11 @@ class DBImpl : public DB {
 
  private:
   friend class DB;
-  struct CompactionState;
+  struct CompactionState;//重构状态
   struct Writer;
 
   // Information for a manual compaction
-  struct ManualCompaction {
+  struct ManualCompaction {// 交互式重构
     int level;
     bool done;
     const InternalKey* begin;  // null means beginning of key range
@@ -131,7 +131,7 @@ class DBImpl : public DB {
 
   // Per level compaction stats.  stats_[level] stores the stats for
   // compactions that produced data for the specified "level".
-  struct CompactionStats {
+  struct CompactionStats {// 重构当前的状态
     CompactionStats() : micros(0), bytes_read(0), bytes_written(0) {}
 
     void Add(const CompactionStats& c) {
@@ -165,14 +165,14 @@ class DBImpl : public DB {
   // Compact the in-memory write buffer to disk.  Switches to a new
   // log-file/memtable and writes a new descriptor iff successful.
   // Errors are recorded in bg_error_.
-  void CompactMemTable() EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+  void CompactMemTable() EXCLUSIVE_LOCKS_REQUIRED(mutex_);// 重构内存表
 
   Status RecoverLogFile(uint64_t log_number, bool last_log, bool* save_manifest,
                         VersionEdit* edit, SequenceNumber* max_sequence)
-      EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+      EXCLUSIVE_LOCKS_REQUIRED(mutex_);// 恢复日志文件
 
   Status WriteLevel0Table(MemTable* mem, VersionEdit* edit, Version* base)
-      EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+      EXCLUSIVE_LOCKS_REQUIRED(mutex_);// 写出 level 0 表数据
 
   Status MakeRoomForWrite(bool force /* compact even if there is room? */)
       EXCLUSIVE_LOCKS_REQUIRED(mutex_);

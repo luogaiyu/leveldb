@@ -18,19 +18,23 @@
 
 namespace leveldb {
 
+/**
+ * 这里使用的是桥接模式
+ * 一个TableBuilder 只会创建一个 Table
+ */
 struct TableBuilder::Rep {
   Rep(const Options& opt, WritableFile* f)
-      : options(opt),
-        index_block_options(opt),
-        file(f),
-        offset(0),
-        data_block(&options),
-        index_block(&index_block_options),
-        num_entries(0),
-        closed(false),
+      : options(opt),// 传递对应的参数, 主要用来控制一些更细节的行为
+        index_block_options(opt),// 索引参数
+        file(f),     // 文件指针, 写出文件
+        offset(0),   // 偏移量
+        data_block(&options), // 创建data_block, 这个是个 BlockBuilder 用来控制最基本的块的行为
+        index_block(&index_block_options),// 创建 index_block, 这个也是一个BlockBuilder, 也可以控制块最基本的行为
+        num_entries(0), // 有多少条记录 
+        closed(false),// 是否正常关闭
         filter_block(opt.filter_policy == nullptr
                          ? nullptr
-                         : new FilterBlockBuilder(opt.filter_policy)),
+                         : new FilterBlockBuilder(opt.filter_policy)),// FilterBlockBuilder 进行一定的策略进行布隆过滤提升检索的效率
         pending_index_entry(false) {
     index_block_options.block_restart_interval = 1;
   }
@@ -40,10 +44,10 @@ struct TableBuilder::Rep {
   WritableFile* file;
   uint64_t offset;
   Status status;
-  BlockBuilder data_block;
+  BlockBuilder data_block;// 
   BlockBuilder index_block;
   std::string last_key;
-  int64_t num_entries;
+  int64_t num_entries; // 
   bool closed;  // Either Finish() or Abandon() has been called.
   FilterBlockBuilder* filter_block;
 
@@ -61,9 +65,14 @@ struct TableBuilder::Rep {
 
   std::string compressed_output;
 };
-
+/**
+ * 初始化分为两个部分
+ * 1. 常规的Rep进行初始化
+ * 2. 
+ */
 TableBuilder::TableBuilder(const Options& options, WritableFile* file)
     : rep_(new Rep(options, file)) {
+      // 如果 存在 filter_block 这个变量, 就初始化
   if (rep_->filter_block != nullptr) {
     rep_->filter_block->StartBlock(0);
   }
@@ -76,7 +85,7 @@ TableBuilder::~TableBuilder() {
 }
 
 Status TableBuilder::ChangeOptions(const Options& options) {
-  // Note: if more fields are added to Options, update
+  // 提示: 如果更多的变量域值被添加到Options中, 更新方法 
   // this function to catch changes that should not be allowed to
   // change in the middle of building a Table.
   if (options.comparator != rep_->options.comparator) {
@@ -91,34 +100,36 @@ Status TableBuilder::ChangeOptions(const Options& options) {
   return Status::OK();
 }
 
+
 void TableBuilder::Add(const Slice& key, const Slice& value) {
   Rep* r = rep_;
+  // rep 是否close了
   assert(!r->closed);
   if (!ok()) return;
   if (r->num_entries > 0) {
     assert(r->options.comparator->Compare(key, Slice(r->last_key)) > 0);
   }
-
+  // 处理 待处理的索引条目
   if (r->pending_index_entry) {
-    assert(r->data_block.empty());
-    r->options.comparator->FindShortestSeparator(&r->last_key, key);
+    assert(r->data_block.empty());// 数据块 是空的
+    r->options.comparator->FindShortestSeparator(&r->last_key, key);// 找到 最后一个key 和当前key的最短分隔符
     std::string handle_encoding;
     r->pending_handle.EncodeTo(&handle_encoding);
     r->index_block.Add(r->last_key, Slice(handle_encoding));
     r->pending_index_entry = false;
   }
-
+  // 
   if (r->filter_block != nullptr) {
     r->filter_block->AddKey(key);
   }
-
+  // 将string类型的数据 重新设置
   r->last_key.assign(key.data(), key.size());
-  r->num_entries++;
-  r->data_block.Add(key, value);
+  r->num_entries++;// 
+  r->data_block.Add(key, value);// 
 
   const size_t estimated_block_size = r->data_block.CurrentSizeEstimate();
   if (estimated_block_size >= r->options.block_size) {
-    Flush();
+    Flush();// 调用Flush方法 把数据写入到内存中
   }
 }
 
@@ -128,25 +139,28 @@ void TableBuilder::Flush() {
   if (!ok()) return;
   if (r->data_block.empty()) return;
   assert(!r->pending_index_entry);
-  WriteBlock(&r->data_block, &r->pending_handle);
+  WriteBlock(&r->data_block, &r->pending_handle);// 调用块写入方法将输入写入
   if (ok()) {
     r->pending_index_entry = true;
     r->status = r->file->Flush();
   }
   if (r->filter_block != nullptr) {
-    r->filter_block->StartBlock(r->offset);
+    r->filter_block->StartBlock(r->offset);// 根据offset 创建过滤器
   }
 }
-
+/**
+ * 
+ */
 void TableBuilder::WriteBlock(BlockBuilder* block, BlockHandle* handle) {
   // File format contains a sequence of blocks where each block has:
   //    block_data: uint8[n]
-  //    type: uint8
-  //    crc: uint32
+  //    type:       uint8
+  //    crc:        uint32
   assert(ok());
+  // 
   Rep* r = rep_;
   Slice raw = block->Finish();
-
+  // 
   Slice block_contents;
   CompressionType type = r->options.compression;
   // TODO(postrelease): Support more compression options: zlib?
@@ -188,13 +202,19 @@ void TableBuilder::WriteBlock(BlockBuilder* block, BlockHandle* handle) {
   r->compressed_output.clear();
   block->Reset();
 }
-
+/**
+ * block_contents: block的内容
+ * type          : 压缩类型
+ * handle        : 提供控制数据块的能力
+ */
 void TableBuilder::WriteRawBlock(const Slice& block_contents,
                                  CompressionType type, BlockHandle* handle) {
   Rep* r = rep_;
+  // handle
   handle->set_offset(r->offset);
   handle->set_size(block_contents.size());
-  r->status = r->file->Append(block_contents);
+  //
+  r->status = r->file->Append(block_contents);// 
   if (r->status.ok()) {
     char trailer[kBlockTrailerSize];
     trailer[0] = type;

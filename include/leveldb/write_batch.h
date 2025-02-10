@@ -46,7 +46,12 @@ class LEVELDB_EXPORT WriteBatch {
 
   ~WriteBatch();
 
-  // Store the mapping "key->value" in the database.
+  /**
+   * @brief 在数据库中 存储一个  key->value的映射
+   * 
+   * @param key 
+   * @param value 
+   */
   void Put(const Slice& key, const Slice& value);
 
   // If the database contains a mapping for "key", erase it.  Else do nothing.

@@ -18,11 +18,11 @@
 #include "leveldb/export.h"
 #include "leveldb/options.h"
 #include "leveldb/status.h"
-// 这段代码定义了 LevelDB 数据库的配置选项，包括数据库行为、
-// 性能参数和读写操作的选项，提供了默认值和自定义设置，以控制数据库的创建、压缩、缓存、日志记录等行为。
+
+
 namespace leveldb {
 
-class BlockBuilder;
+class BlockBuilder;// (Build) 构造器,  
 class BlockHandle;
 class WritableFile;
 

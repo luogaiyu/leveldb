@@ -13,16 +13,9 @@
 #include "leveldb/iterator.h"
 
 namespace leveldb {
+
 /**
- * 根据表的注释可以看出 这个方法主要是为了构建一个表
- * 2024031: 
- * dbname:表示数据库名称
- * env: 环境的配置
- * option: 表示一些配置选项
- * table_cache: 配置缓存
- * iter: 一些迭代器
- * meta: 元数据信息 
- * 
+ * BuildTable: 建表操作
  */
 Status BuildTable(const std::string& dbname, Env* env, const Options& options,
                   TableCache* table_cache, Iterator* iter, FileMetaData* meta) {
@@ -37,13 +30,13 @@ Status BuildTable(const std::string& dbname, Env* env, const Options& options,
   
   if (iter->Valid()) {
     WritableFile* file;
-    s = env->NewWritableFile(fname, &file);
+    s = env->NewWritableFile(fname, &file);// 
     if (!s.ok()) {
       return s;
     }
     /**
      * 创建一个表构建的类
-     * 1.
+     * 1. 
      */
     TableBuilder* builder = new TableBuilder(options, file);
     /**
