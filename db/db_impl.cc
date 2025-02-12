@@ -1238,64 +1238,62 @@ Status DBImpl::Delete(const WriteOptions& options, const Slice& key) {
  * @brief 写入操作, 处理写入请求, 包括将写操作加入队列, 等待执行, 实际写入日志和内存表
  * 
  * @param options : 写入参数控制
- * @param updates : 
- * @return Status 
+ * @param updates : 批处理存储的变量
+ * @return Status : 操作的状态
  */
 Status DBImpl::Write(const WriteOptions& options, WriteBatch* updates) {
-  Writer w(&mutex_);   // 使用mutex 来实现写入的多线程一致性
+  Writer w(&mute x_);   // mutex 主要用于共享资源占有的标记
+  // 对写入操作进行标记
   w.batch = updates;
   w.sync = options.sync; 
-  w.done = false;      // 当前的写入操作 没有完成
+  w.done = false;     
 
-  MutexLock l(&mutex_);// 对当前操作进行上锁
+  MutexLock l(&mutex_); // 对当前操作进行上锁
+  // 将当前的写入操作加入 writer: 双端队列
   writers_.push_back(&w);
-  while (!w.done && &w != writers_.front()) {
-    w.cv.Wait();// 避免竞争
+  while (!w.done && &w != writers_.front()) {// 判断当前写入操作是否完成 & 当前的写入操作是否排的是第一位 串行操作
+    w.cv.Wait();// 如果当前的操作不满足要求, 就将队列加入 双端队列 等待
   }
   if (w.done) {
-    return w.status;
+    return w.status;// 如果已经完成返回状态
   }
-//-------------------------------------------------------
-
-  // May temporarily unlock and wait.
+  // 有可能 短暂解锁并等待
   Status status = MakeRoomForWrite(updates == nullptr);// 为写操作 腾出压缩
-  uint64_t last_sequence = versions_->LastSequence();
+  uint64_t last_sequence = versions_->LastSequence();// 使用版本控制获取序列号
   Writer* last_writer = &w;
-  if (status.ok() && updates != nullptr) {  // nullptr batch is for compactions
-    WriteBatch* write_batch = BuildBatchGroup(&last_writer);
-    WriteBatchInternal::SetSequence(write_batch, last_sequence + 1);
-    last_sequence += WriteBatchInternal::Count(write_batch);
 
-    // Add to log and apply to memtable.  We can release the lock
-    // during this phase since &w is currently responsible for logging
-    // and protects against concurrent loggers and concurrent writes
-    // into mem_.
+  if (status.ok() && updates != nullptr) {  // 如果扩容操作成功, 并且 批处理为空 说明当前是合并操作 compaction
+    WriteBatch* write_batch = BuildBatchGroup(&last_writer);// 构建写批处理组
+    WriteBatchInternal::SetSequence(write_batch, last_sequence + 1);// 更新序列号
+    last_sequence += WriteBatchInternal::Count(write_batch); // 更新序列号
+
     {
       mutex_.Unlock();
-      status = log_->AddRecord(WriteBatchInternal::Contents(write_batch));// 写入日志文件
+      status = log_->AddRecord(WriteBatchInternal::Contents(write_batch));// 调用日志文件 写入 write_batch的rep_[实际的数据]
       bool sync_error = false;
-      if (status.ok() && options.sync) {
-        status = logfile_->Sync();// 同步日志文件?
+      if (status.ok() && options.sync) { // 同步操作
+        status = logfile_->Sync(); // 将数据刷写到磁盘中
         if (!status.ok()) {
           sync_error = true;
         }
       }
       if (status.ok()) {
-        status = WriteBatchInternal::InsertInto(write_batch, mem_);// 然后把对应的数据 写入到内存中
+        status = WriteBatchInternal::InsertInto(write_batch, mem_);// 然后把对应的数据 写入到内存中, 做缓存
       }
-      mutex_.Lock();
+      mutex_.Lock();// 继续进行上锁
       if (sync_error) {
-        // The state of the log file is indeterminate: the log record we
-        // just added may or may not show up when the DB is re-opened.
-        // So we force the DB into a mode where all future writes fail.
-        RecordBackgroundError(status);
+        /**
+         * @brief 因为日志文件的状态不确定
+         * 强制所有的写入操作都失败
+         */
+        RecordBackgroundError(status);// 记录背景错误
       }
     }
     if (write_batch == tmp_batch_) tmp_batch_->Clear();
 
     versions_->SetLastSequence(last_sequence);
   }
-
+  // 写请求|担心
   while (true) {
     Writer* ready = writers_.front();
     writers_.pop_front();
@@ -1306,8 +1304,8 @@ Status DBImpl::Write(const WriteOptions& options, WriteBatch* updates) {
     }
     if (ready == last_writer) break;
   }
-
-  // Notify new head of write queue
+  
+  // 通知新的写请求队列的头部
   if (!writers_.empty()) {
     writers_.front()->cv.Signal();
   }
@@ -1368,6 +1366,12 @@ WriteBatch* DBImpl::BuildBatchGroup(Writer** last_writer) {
 // REQUIRES: mutex_ is held
 // REQUIRES: this thread is currently at the front of the writer queue
 // 
+/**
+ * @brief 要求: 拿到mutex 并且当前的进程已经在双端队列的头部
+ * 
+ * @param force : 是否允许等待
+ * @return Status 
+ */
 Status DBImpl::MakeRoomForWrite(bool force) {
   mutex_.AssertHeld();
   assert(!writers_.empty());

@@ -79,6 +79,13 @@ class DBImpl : public DB {
   ~DBImpl() override;
 
   // Implementations of the DB interface
+  /**
+   * @brief 数据库写入操作
+   * 
+   * @param key 键
+   * @param value 值 
+   * @return Status 
+   */
   Status Put(const WriteOptions&, const Slice& key,
              const Slice& value) override;
   Status Delete(const WriteOptions&, const Slice& key) override;
@@ -227,6 +234,11 @@ class DBImpl : public DB {
   uint32_t seed_ GUARDED_BY(mutex_);  // For sampling.
 
   // Queue of writers.
+  /**
+   * @brief 双端队列, 
+   * 
+   * @return std::deque<Writer*> 
+   */
   std::deque<Writer*> writers_ GUARDED_BY(mutex_);
   WriteBatch* tmp_batch_ GUARDED_BY(mutex_);
 
@@ -243,7 +255,7 @@ class DBImpl : public DB {
 
   VersionSet* const versions_ GUARDED_BY(mutex_);
 
-  // Have we encountered a background error in paranoid mode?
+  // 在严格模式中:表示 是否在后台出现问题
   Status bg_error_ GUARDED_BY(mutex_);
 
   CompactionStats stats_[config::kNumLevels] GUARDED_BY(mutex_);
