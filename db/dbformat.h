@@ -227,8 +227,10 @@ inline bool ParseInternalKey(const Slice& internal_key,
   return (c <= static_cast<uint8_t>(kTypeValue));
 }
 
-// A helper class useful for DBImpl::Get()
-// 为什么需要这个类?
+/**
+ * @brief DB::Get的帮助类
+ * 
+ */
 class LookupKey {// 相当于 给一些信息 来辅助检索
  public:
   // Initialize *this for looking up user_key at a snapshot with

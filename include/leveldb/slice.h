@@ -21,8 +21,10 @@
 #include <string>
 
 #include "leveldb/export.h"
-// 这段代码定义了 LevelDB 中的 Slice 类，它是一个简单的结构，表示一个指向外部存储
-// 区域的指针以及该区域的大小。Slice 类的主要作用是方便处理和操作一段连续的数据，并提供一些基本的功能方法。
+/**
+ * @brief 这段代码定义了 LevelDB 中的 Slice 类，它是一个简单的结构，表示一个指向外部存储
+ * 
+ */
 namespace leveldb {
 
 class LEVELDB_EXPORT Slice {
@@ -90,8 +92,8 @@ class LEVELDB_EXPORT Slice {
   }
 
  private:
-  const char* data_;
-  size_t size_;
+  const char* data_;// 内存数据
+  size_t size_;// 内存大小
 };
 
 inline bool operator==(const Slice& x, const Slice& y) {

@@ -1148,7 +1148,14 @@ int64_t DBImpl::TEST_MaxNextLevelOverlappingBytes() {
   return versions_->MaxNextLevelOverlappingBytes();
 }
 
-// 这里是 Get方法
+/**
+ * @brief 
+ * 
+ * @param options 读取选项
+ * @param key 
+ * @param value 
+ * @return Status 
+ */
 Status DBImpl::Get(const ReadOptions& options, const Slice& key,
                    std::string* value) {
   Status s;
@@ -1160,9 +1167,8 @@ Status DBImpl::Get(const ReadOptions& options, const Slice& key,
   } else {
     snapshot = versions_->LastSequence();
   }
-  // 主要有两种 memtable
-  MemTable* mem = mem_;
-  MemTable* imm = imm_;
+  MemTable* mem = mem_;// 可变内存
+  MemTable* imm = imm_;// 不可变内存
   // 主要有两种 memtable
   Version* current = versions_->current();
   mem->Ref();// 增加引用
@@ -1191,9 +1197,9 @@ Status DBImpl::Get(const ReadOptions& options, const Slice& key,
   if (have_stat_update && current->UpdateStats(stats)) {
     MaybeScheduleCompaction(); // 压缩层级的方法 主要是为了提升读取的性能
   }
-  mem->Unref();// 取消 引用
-  if (imm != nullptr) imm->Unref();// 取消 引用
-  current->Unref();// 取消 引用
+  mem->Unref();                   
+  if (imm != nullptr) imm->Unref();
+  current->Unref();
   return s;
 }
 

@@ -36,7 +36,6 @@ Status BuildTable(const std::string& dbname, Env* env, const Options& options,
     }
     /**
      * 创建一个表构建的类
-     * 1. 
      */
     TableBuilder* builder = new TableBuilder(options, file);
     /**

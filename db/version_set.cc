@@ -320,7 +320,15 @@ void Version::ForEachOverlapping(Slice user_key, Slice internal_key, void* arg,
     }
   }
 }
-
+/**
+ * @brief 
+ * 
+ * @param options 
+ * @param k 
+ * @param value 
+ * @param stats 
+ * @return Status 
+ */
 Status Version::Get(const ReadOptions& options, const LookupKey& k,
                     std::string* value, GetStats* stats) {
   stats->seek_file = nullptr;
@@ -399,9 +407,9 @@ Status Version::Get(const ReadOptions& options, const LookupKey& k,
   return state.found ? state.s : Status::NotFound(Slice());
 }
 
-bool Version::UpdateStats(const GetStats& stats) {// 
+bool Version::UpdateStats(const GetStats& stats) {
   FileMetaData* f = stats.seek_file;// 获取 文件元数据
-  if (f != nullptr) { 
+  if (f != nullptr) {
     f->allowed_seeks--;//减少允许的查找次数
     if (f->allowed_seeks <= 0 && file_to_compact_ == nullptr) {// 查看当前是否允许被压缩
       file_to_compact_ = f;

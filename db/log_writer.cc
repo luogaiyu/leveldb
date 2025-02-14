@@ -37,12 +37,12 @@ Status Writer::AddRecord(const Slice& slice) {
   const char* ptr = slice.data();
   size_t left = slice.size();
 
-  // Fragment the record if necessary and emit it.  Note that if slice
-  // is empty, we still want to iterate once to emit a single
-  // zero-length record
+  // 如果有必要将数据进行分块将数据发送到对应的信息流中
+  // 如果 Slice是空的话, 仍然想要循环一次
   Status s;
   bool begin = true;
   do {
+    // 如果剩余空间 < kHeaderSize
     const int leftover = kBlockSize - block_offset_;
     assert(leftover >= 0);
     if (leftover < kHeaderSize) {
@@ -50,7 +50,7 @@ Status Writer::AddRecord(const Slice& slice) {
       if (leftover > 0) {
         // Fill the trailer (literal below relies on kHeaderSize being 7)
         static_assert(kHeaderSize == 7, "");
-        dest_->Append(Slice("\x00\x00\x00\x00\x00\x00", leftover));
+        dest_->Append(Slice("\x00\x00\x00\x00\x00\x00", leftover));//用于写入末尾字符
       }
       block_offset_ = 0;
     }
@@ -62,6 +62,7 @@ Status Writer::AddRecord(const Slice& slice) {
     const size_t fragment_length = (left < avail) ? left : avail;
 
     RecordType type;
+    // 判断当前传输的信息 是属于数据 前端 中端 还是末端, 每个端有不同的写入逻辑
     const bool end = (left == fragment_length);
     if (begin && end) {
       type = kFullType;
@@ -80,7 +81,15 @@ Status Writer::AddRecord(const Slice& slice) {
   } while (s.ok() && left > 0);
   return s;
 }
-// 用于发出物理记录：主要用来操作对应的硬盘IO, 寄存器
+// 
+/**
+ * @brief 用于 向内存中实际写入数据, 将实际与底层硬件 和前期判断的逻辑做了拆解
+ * 
+ * @param t 
+ * @param ptr 
+ * @param length 
+ * @return Status 
+ */
 Status Writer::EmitPhysicalRecord(RecordType t, const char* ptr,
                                   size_t length) {
   assert(length <= 0xffff);  // Must fit in two bytes
@@ -92,6 +101,7 @@ Status Writer::EmitPhysicalRecord(RecordType t, const char* ptr,
   buf[5] = static_cast<char>(length >> 8);
   buf[6] = static_cast<char>(t);
 
+  // 通过crc 做了 校验, 防止任务出错
   // Compute the crc of the record type and the payload.
   uint32_t crc = crc32c::Extend(type_crc_[t], ptr, length);
   crc = crc32c::Mask(crc);  // Adjust for storage
