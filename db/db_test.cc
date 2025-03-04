@@ -151,8 +151,16 @@ class SpecialEnv : public EnvWrapper {
         manifest_write_error_(false),
         log_file_close_(false),
         count_random_reads_(false) {}
-
+/**
+ * 相当于通过DataFile的更底层抽象来构建 WriteableFile 
+ * 
+ * 文件类型 
+ * 1. .ldb 数据文件
+ * 2. .log 日志文件
+ * 3. MANIFEST 清单文件 
+ */
   Status NewWritableFile(const std::string& f, WritableFile** r) {
+    // DataFile：数据文件抽象
     class DataFile : public WritableFile {
      private:
       SpecialEnv* const env_;
@@ -191,6 +199,7 @@ class SpecialEnv : public EnvWrapper {
         return base_->Sync();
       }
     };
+    // 元文件信息
     class ManifestFile : public WritableFile {
      private:
       SpecialEnv* env_;

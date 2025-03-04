@@ -330,6 +330,12 @@ class VersionSet {
 };
 
 // A Compaction encapsulates information about a compaction.
+/**
+ * 作用
+ * 1. 管理压缩操作的元数据
+ * 2. 确定压缩策略
+ * 3. 跟踪压缩进度
+ */
 class Compaction {
  public:
   ~Compaction();

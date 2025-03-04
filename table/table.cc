@@ -228,19 +228,26 @@ Status Table::InternalGet(const ReadOptions& options, const Slice& k, void* arg,
                           void (*handle_result)(void*, const Slice&,
                                                 const Slice&)) {
   Status s;
+  // 创建索引块的迭代器 
   Iterator* iiter = rep_->index_block->NewIterator(rep_->options.comparator);
-  iiter->Seek(k);
+  iiter->Seek(k);//在索引块中查找
+  
   if (iiter->Valid()) {
+    // 找到可能包含目标key的位置
     Slice handle_value = iiter->value();
+    // 布隆过滤器检查 
     FilterBlockReader* filter = rep_->filter;
     BlockHandle handle;
     if (filter != nullptr && handle.DecodeFrom(&handle_value).ok() &&
-        !filter->KeyMayMatch(handle.offset(), k)) {
+        !filter->KeyMayMatch(handle.offset(), k)) {// 如果布隆过滤器表示key不存在，直接返回
       // Not found
     } else {
+      // 读取实际的数据块
       Iterator* block_iter = BlockReader(this, options, iiter->value());
+      // 在数据块中查找
       block_iter->Seek(k);
       if (block_iter->Valid()) {
+        // 找到数据，调用回调函数处理结果
         (*handle_result)(arg, block_iter->key(), block_iter->value());
       }
       s = block_iter->status();

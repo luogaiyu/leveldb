@@ -309,19 +309,25 @@ template <typename Key, class Comparator>
 typename SkipList<Key, Comparator>::Node*
 SkipList<Key, Comparator>::FindGreaterOrEqual(const Key& key,
                                               Node** prev) const {
+  // 从头节点开始
   Node* x = head_;
+  // 从最高层开始
   int level = GetMaxHeight() - 1;
   while (true) {
+    // 获取当前层的下一个节点
     Node* next = x->Next(level);
+    // 如果当前层的下一个节点大于key, 则继续向下层查找
     if (KeyIsAfterNode(key, next)) {
       // Keep searching in this list
       x = next;
     } else {
+      // 如果prev不为空, 则将当前节点赋值给prev[level]
       if (prev != nullptr) prev[level] = x;
+      // 如果当前层为0层, 则返回下一个节点
       if (level == 0) {
         return next;
       } else {
-        // Switch to next list
+        // 如果当前层不是0层, 则继续向下层查找  
         level--;
       }
     }

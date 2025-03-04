@@ -115,20 +115,20 @@ void TableBuilder::Add(const Slice& key, const Slice& value) {
     r->options.comparator->FindShortestSeparator(&r->last_key, key);// 找到 最后一个key 和当前key的最短分隔符
     std::string handle_encoding;
     r->pending_handle.EncodeTo(&handle_encoding);
-    r->index_block.Add(r->last_key, Slice(handle_encoding));
+    r->index_block.Add(r->last_key, Slice(handle_encoding));// 索引块添加 
     r->pending_index_entry = false;
   }
   // 
   if (r->filter_block != nullptr) {
-    r->filter_block->AddKey(key);
+    r->filter_block->AddKey(key);// 添加过滤块
   }
   // 将string类型的数据 重新设置
   r->last_key.assign(key.data(), key.size());
   r->num_entries++;// 
-  r->data_block.Add(key, value);// 
+  r->data_block.Add(key, value);//  数据块添加
 
   const size_t estimated_block_size = r->data_block.CurrentSizeEstimate();
-  if (estimated_block_size >= r->options.block_size) {
+  if (estimated_block_size >= r->options.block_size) {//判断块大小
     Flush();// 调用Flush方法 把数据写入到内存中
   }
 }
@@ -214,7 +214,7 @@ void TableBuilder::WriteRawBlock(const Slice& block_contents,
   handle->set_offset(r->offset);
   handle->set_size(block_contents.size());
   //
-  r->status = r->file->Append(block_contents);// 
+  r->status = r->file->Append(block_contents);// 这里的file 是通过策略模式来进行
   if (r->status.ok()) {
     char trailer[kBlockTrailerSize];
     trailer[0] = type;

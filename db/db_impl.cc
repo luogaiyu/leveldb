@@ -223,7 +223,9 @@ void DBImpl::MaybeIgnoreError(Status* s) const {
     *s = Status::OK();
   }
 }
-
+/**
+ * 负责清理不再需要的文件
+ */
 void DBImpl::RemoveObsoleteFiles() {
   mutex_.AssertHeld();
 
@@ -290,6 +292,7 @@ void DBImpl::RemoveObsoleteFiles() {
   }
   mutex_.Lock();
 }
+
 // 恢复数据库
 Status DBImpl::Recover(VersionEdit* edit, bool* save_manifest) {
   mutex_.AssertHeld();
@@ -519,21 +522,24 @@ Status DBImpl::WriteLevel0Table(MemTable* mem, VersionEdit* edit,
   Log(options_.info_log, "Level-0 table #%llu: started",
       (unsigned long long)meta.number);
 
+  // 构建SStable
   Status s;
   {
     mutex_.Unlock();
     s = BuildTable(dbname_, env_, options_, table_cache_, iter, &meta);// 通过BuildTable方法构建 Table对象
     mutex_.Lock();
   }
-
+  // 清理和日志记录
   Log(options_.info_log, "Level-0 table #%llu: %lld bytes %s", 
       (unsigned long long)meta.number, (unsigned long long)meta.file_size,
       s.ToString().c_str());// %llu 占位符号: long long unsigned 长整型无符号类型
   delete iter;
   pending_outputs_.erase(meta.number);
 
+
   // Note that if file_size is zero, the file has been deleted and
-  // should not be added to the manifest. 
+  // should not be added to the manifest.
+  //选择层级和更新元数据，解释下这个leveldb的版本管理
   int level = 0;
   if (s.ok() && meta.file_size > 0) {
     const Slice min_user_key = meta.smallest.user_key();
@@ -544,7 +550,7 @@ Status DBImpl::WriteLevel0Table(MemTable* mem, VersionEdit* edit,
     edit->AddFile(level, meta.number, meta.file_size, meta.smallest,
                   meta.largest);
   }
-
+  // 统计信息
   CompactionStats stats;
   stats.micros = env_->NowMicros() - start_micros;
   stats.bytes_written = meta.file_size;
@@ -558,11 +564,14 @@ void DBImpl::CompactMemTable() {
   mutex_.AssertHeld();
   assert(imm_ != nullptr);
 
-  // Save the contents of the memtable as a new Table
+  // 保存内存表的内容作为新的表文件 
+  /**
+   * 版本管理
+   */
   VersionEdit edit;
   Version* base = versions_->current();
   base->Ref();
-  Status s = WriteLevel0Table(imm_, &edit, base);// 写入一个新的 Level0表文件, 更新edit
+  Status s = WriteLevel0Table(imm_, &edit, base);// 写入一个新的 Level0表文件, 更新edit 将内存表转换成SSTable
   base->Unref();
 
   if (s.ok() && shutting_down_.load(std::memory_order_acquire)) {
@@ -671,17 +680,16 @@ void DBImpl::RecordBackgroundError(const Status& s) {
     background_work_finished_signal_.SignalAll();
   }
 }
-
+/**
+ * 在后台可能会检查是否进行压缩
+ */
 void DBImpl::MaybeScheduleCompaction() {
-  mutex_.AssertHeld();// 确保 互斥锁已经持有
-  if (background_compaction_scheduled_) {
-// 查看当前的后台压缩任务标识 是否为true, 如果为true
-  } else if (shutting_down_.load(std::memory_order_acquire)) {// 查看数据库, 是否已经关闭, 如果关闭, 不需要进行压缩
-
+  mutex_.AssertHeld();// 确保 互斥锁已经持有：主要是为了确保能拿到 background_compaction_scheduled_ 
+  if (background_compaction_scheduled_) {// 确保当前没有正在运行的压缩任务: 查看当前的后台压缩任务标识 是否为true, 如果为true
+  } else if (shutting_down_.load(std::memory_order_acquire)) {// 确保数据库正常运行： 查看数据库, 是否已经关闭, 如果关闭, 不需要进行压缩
   } else if (!bg_error_.ok()) {// 检查是否有后台错误
-    // Already got an error; no more changes
   } else if (imm_ == nullptr && manual_compaction_ == nullptr &&
-             !versions_->NeedsCompaction()) {
+             !versions_->NeedsCompaction()) {// 判断是否需要压缩
     // 检查
     /**
      * 1. imm 是否为 nullptr, 表示没有不可变内存表需要处理
@@ -693,7 +701,7 @@ void DBImpl::MaybeScheduleCompaction() {
      * 后台运行 方法
      */
     background_compaction_scheduled_ = true;
-    env_->Schedule(&DBImpl::BGWork, this);
+    env_->Schedule(&DBImpl::BGWork, this);// 
   }
 }
 
@@ -705,11 +713,11 @@ void DBImpl::BackgroundCall() {
   MutexLock l(&mutex_);
   assert(background_compaction_scheduled_);
   if (shutting_down_.load(std::memory_order_acquire)) {
-    // No more background work when shutting down.
+    // 当数据库关闭时，不再执行后台工作。
   } else if (!bg_error_.ok()) {
-    // No more background work after a background error.
+    // 当后台工作出现错误时，不再执行后台工作。 
   } else {
-    BackgroundCompaction();
+    BackgroundCompaction();// 执行后台压缩工作
   }
 
   background_compaction_scheduled_ = false;
@@ -936,7 +944,7 @@ Status DBImpl::DoCompactionWork(CompactionState* compact) {
     compact->smallest_snapshot = snapshots_.oldest()->sequence_number();
   }
   // 创建输入迭代器
-  Iterator* input = versions_->MakeInputIterator(compact->compaction);
+  Iterator* input = versions_->MakeInputIterator(compact->compaction);// 合并多个SSTable的数据
 
   // Release mutex while we're actually doing the compaction work
   // 释放互斥锁
@@ -961,8 +969,8 @@ Status DBImpl::DoCompactionWork(CompactionState* compact) {
       mutex_.Lock();
       if (imm_ != nullptr) {
         CompactMemTable();// 核心方法: 压缩内存表
-        // Wake up MakeRoomForWrite() if necessary.
-        background_work_finished_signal_.SignalAll();
+        // 通知等待的线程，压缩已经完成
+        background_work_finished_signal_.SignalAll(); // 通知等待的线程，压缩已经完成
       }
       mutex_.Unlock();
       imm_micros += (env_->NowMicros() - imm_start);
@@ -1086,7 +1094,7 @@ Status DBImpl::DoCompactionWork(CompactionState* compact) {
   return status;
 }
 
-namespace {
+namespace {  
 
 struct IterState {
   port::Mutex* const mu;
@@ -1160,13 +1168,22 @@ Status DBImpl::Get(const ReadOptions& options, const Slice& key,
                    std::string* value) {
   Status s;
   MutexLock l(&mutex_);
-  SequenceNumber snapshot;// 对应的快照
+  SequenceNumber snapshot;
+  /**
+   * 读取快照,如果存在指定快照则读取指定快照，如果不存在就读取最新的快照
+   * 快照的目的是为了实现MVCC
+   * 主要有以下的特点
+   * 1. 提供读取历史能力的能力
+   * 2. 保证读取的一致性
+   * 3. 支持多版本的并发控制
+   */
   if (options.snapshot != nullptr) {
     snapshot =
         static_cast<const SnapshotImpl*>(options.snapshot)->sequence_number();// 隐式转换
   } else {
     snapshot = versions_->LastSequence();
   }
+  
   MemTable* mem = mem_;// 可变内存
   MemTable* imm = imm_;// 不可变内存
   // 主要有两种 memtable
@@ -1240,6 +1257,7 @@ Status DBImpl::Put(const WriteOptions& o, const Slice& key, const Slice& val) {
 Status DBImpl::Delete(const WriteOptions& options, const Slice& key) {
   return DB::Delete(options, key);
 }
+
 /**
  * @brief 写入操作, 处理写入请求, 包括将写操作加入队列, 等待执行, 实际写入日志和内存表
  * 
@@ -1257,25 +1275,34 @@ Status DBImpl::Write(const WriteOptions& options, WriteBatch* updates) {
   MutexLock l(&mutex_); // 对当前操作进行上锁
   // 将当前的写入操作加入 writer: 双端队列
   writers_.push_back(&w);
-  while (!w.done && &w != writers_.front()) {// 判断当前写入操作是否完成 & 当前的写入操作是否排的是第一位 串行操作
+  /**
+   * 其实是判断当前的写入操作 是否完成
+   * 当前写入操作是否排的是第一位
+   * 如果都不是 就加入双端队列中等待
+   */
+  while (!w.done && &w != writers_.front()) {
     w.cv.Wait();// 如果当前的操作不满足要求, 就将队列加入 双端队列 等待
   }
   if (w.done) {
     return w.status;// 如果已经完成返回状态
   }
   // 有可能 短暂解锁并等待
-  Status status = MakeRoomForWrite(updates == nullptr);// 为写操作 腾出压缩
-  uint64_t last_sequence = versions_->LastSequence();// 使用版本控制获取序列号
+  Status status = MakeRoomForWrite(updates == nullptr);// 为写操作 腾出压缩, 具体的原因是为了防止 level0的文件过多
+  
+  uint64_t last_sequence = versions_->LastSequence();// 使用版本控制获取序列号, 更新版本号的操作，1. 写入操作导致更新，2. 压缩操作导致更新
   Writer* last_writer = &w;
 
   if (status.ok() && updates != nullptr) {  // 如果扩容操作成功, 并且 批处理为空 说明当前是合并操作 compaction
+//  -- 版本管理---
     WriteBatch* write_batch = BuildBatchGroup(&last_writer);// 构建写批处理组
     WriteBatchInternal::SetSequence(write_batch, last_sequence + 1);// 更新序列号
     last_sequence += WriteBatchInternal::Count(write_batch); // 更新序列号
-
+//  -- 版本管理---
     {
       mutex_.Unlock();
+      // -- 向日志文件中新增数据--
       status = log_->AddRecord(WriteBatchInternal::Contents(write_batch));// 调用日志文件 写入 write_batch的rep_[实际的数据]
+      // -- 向日志文件中新增数据--
       bool sync_error = false;
       if (status.ok() && options.sync) { // 同步操作
         status = logfile_->Sync(); // 将数据刷写到磁盘中
@@ -1287,7 +1314,7 @@ Status DBImpl::Write(const WriteOptions& options, WriteBatch* updates) {
         status = WriteBatchInternal::InsertInto(write_batch, mem_);// 然后把对应的数据 写入到内存中, 做缓存
       }
       mutex_.Lock();// 继续进行上锁
-      if (sync_error) {
+      if (sync_error) { 
         /**
          * @brief 因为日志文件的状态不确定
          * 强制所有的写入操作都失败
@@ -1299,7 +1326,7 @@ Status DBImpl::Write(const WriteOptions& options, WriteBatch* updates) {
 
     versions_->SetLastSequence(last_sequence);
   }
-  // 写请求|担心
+  // 写请求|担心q
   while (true) {
     Writer* ready = writers_.front();
     writers_.pop_front();
@@ -1373,54 +1400,46 @@ WriteBatch* DBImpl::BuildBatchGroup(Writer** last_writer) {
 // REQUIRES: this thread is currently at the front of the writer queue
 // 
 /**
- * @brief 要求: 拿到mutex 并且当前的进程已经在双端队列的头部
- * 
+ * @brief 要求: 拿到mutex 并且当前的进程已经在双端队列的头部,主要是为写操作进行一些准备工作
  * @param force : 是否允许等待
  * @return Status 
  */
 Status DBImpl::MakeRoomForWrite(bool force) {
-  mutex_.AssertHeld();
+  mutex_.AssertHeld();// 判断是否拿到锁
   assert(!writers_.empty());
-  bool allow_delay = !force;
+  bool allow_delay = !force;// 是否允许延迟
   Status s;
-  while (true) {
-    if (!bg_error_.ok()) {
-      // Yield previous error
+  while (true) { //  主循环处理各种情况
+    if (!bg_error_.ok()) { // 首先检查 后台错误
       s = bg_error_;
-      break;
-    } else if (allow_delay && versions_->NumLevelFiles(0) >=
-                                  config::kL0_SlowdownWritesTrigger) {
-      // We are getting close to hitting a hard limit on the number of
-      // L0 files.  Rather than delaying a single write by several
-      // seconds when we hit the hard limit, start delaying each
-      // individual write by 1ms to reduce latency variance.  Also,
-      // this delay hands over some CPU to the compaction thread in
-      // case it is sharing the same core as the writer.
+      break;  
+    } else if (allow_delay && versions_->NumLevelFiles(0) >= config::kL0_SlowdownWritesTrigger) {// 判断当前Level0的文件数量 是否超过上限
+      // 现在接近L0文件的上线，与其让单个写入延迟几秒当我们达到上限，不如让每个写入延迟1ms来减少延迟的差异。
+      // 同时，这个延迟也会将一些CPU交给压缩线程，如果它与写入线程共享同一个核心。  
       mutex_.Unlock();
-      env_->SleepForMicroseconds(1000);
-      allow_delay = false;  // Do not delay a single write more than once
+      env_->SleepForMicroseconds(1000);// 用来延迟1000微秒
+      allow_delay = false;  // 不要延迟单个写入操作两次
       mutex_.Lock();
     } else if (!force &&
-               (mem_->ApproximateMemoryUsage() <= options_.write_buffer_size)) {
-      // There is room in current memtable
+               (mem_->ApproximateMemoryUsage() <= options_.write_buffer_size)) {// 检查当前内存表空间：判断 当前的可变内存是否< 设置好的 写入缓存
+      // 在当前的 可变内存中 仍然有空间
       break;
-    } else if (imm_ != nullptr) {
-      // We have filled up the current memtable, but the previous
-      // one is still being compacted, so we wait.
+    } else if (imm_ != nullptr) {// 处理内存表已满的情况：
+      // 当前的内存已经满了，但是上一个内存还在压缩，所以等待
       Log(options_.info_log, "Current memtable full; waiting...\n");
-      background_work_finished_signal_.Wait();
+      background_work_finished_signal_.Wait();// 相当于 等待后台的压缩过程完成
     } else if (versions_->NumLevelFiles(0) >= config::kL0_StopWritesTrigger) {
-      // There are too many level-0 files.
+      // 当前的L0文件数量 超过了 设置的阈值
       Log(options_.info_log, "Too many L0 files; waiting...\n");
-      background_work_finished_signal_.Wait();
+      background_work_finished_signal_.Wait(); 
     } else {
-      // Attempt to switch to a new memtable and trigger compaction of old
+      // 尝试 转换到新的内存块，并对旧模块触发一次压缩
       assert(versions_->PrevLogNumber() == 0);
       uint64_t new_log_number = versions_->NewFileNumber();
       WritableFile* lfile = nullptr;
-      s = env_->NewWritableFile(LogFileName(dbname_, new_log_number), &lfile);
+      s = env_->NewWritableFile(LogFileName(dbname_, new_log_number), &lfile);// 和 dataFile进行联系， 并创建一个新的Writable类
       if (!s.ok()) {
-        // Avoid chewing through file number space in a tight loop.
+        // 避免在紧循环中消耗文件编号空间。
         versions_->ReuseFileNumber(new_log_number);
         break;
       }
@@ -1429,13 +1448,12 @@ Status DBImpl::MakeRoomForWrite(bool force) {
 
       s = logfile_->Close();
       if (!s.ok()) {
-        // We may have lost some data written to the previous log file.
-        // Switch to the new log file anyway, but record as a background
-        // error so we do not attempt any more writes.
+        // 我们可能已经丢失了一些写入到上一个日志文件的数据。
+        // 无论如何，切换到新的日志文件，但记录为后台错误，
+        // 这样我们就不会尝试任何更多的写入。
         //
-        // We could perhaps attempt to save the memtable corresponding
-        // to log file and suppress the error if that works, but that
-        // would add more complexity in a critical code path.
+        // 我们或许可以尝试保存对应的内存表，并抑制错误，
+        // 如果这能奏效，但那样会增加更多的复杂性在关键路径中。
         RecordBackgroundError(s);
       }
       delete logfile_;

@@ -335,30 +335,31 @@ Status Version::Get(const ReadOptions& options, const LookupKey& k,
   stats->seek_file_level = -1;
 
   struct State {
-    Saver saver;
-    GetStats* stats;
-    const ReadOptions* options;
-    Slice ikey;
-    FileMetaData* last_file_read;
-    int last_file_read_level;
-
-    VersionSet* vset;
-    Status s;
-    bool found;
+    Saver saver;                // 保存查找结果
+    GetStats* stats;            // 统计信息
+    const ReadOptions* options; // 读取选项
+    Slice ikey;                // 内部key
+    FileMetaData* last_file_read;  // 上次读取的文件
+    int last_file_read_level;      // 上次读取的层级
+    
+    VersionSet* vset;          // 版本集
+    Status s;                  // 操作状态
+    bool found;               // 是否找到
 
     static bool Match(void* arg, int level, FileMetaData* f) {
       State* state = reinterpret_cast<State*>(arg);
 
+      //  记录查找统计信息 
       if (state->stats->seek_file == nullptr &&
           state->last_file_read != nullptr) {
         // We have had more than one seek for this read.  Charge the 1st file.
         state->stats->seek_file = state->last_file_read;
         state->stats->seek_file_level = state->last_file_read_level;
       }
-
+        // 更新最后读取的文件信息
       state->last_file_read = f;
       state->last_file_read_level = level;
-
+      // 获取表缓存中的数据
       state->s = state->vset->table_cache_->Get(*state->options, f->number,
                                                 f->file_size, state->ikey,
                                                 &state->saver, SaveValue);
@@ -1262,8 +1263,7 @@ Compaction* VersionSet::PickCompaction() {// 选择需要压缩的任务进行�
   Compaction* c;
   int level;
 
-  // We prefer compactions triggered by too much data in a level over
-  // the compactions triggered by seeks.
+  // 我们更喜欢由太多数据在一个级别触发压缩，而不是由太多搜索触发压缩。 
   const bool size_compaction = (current_->compaction_score_ >= 1);
   const bool seek_compaction = (current_->file_to_compact_ != nullptr);
   if (size_compaction) {

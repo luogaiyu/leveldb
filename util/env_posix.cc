@@ -359,7 +359,7 @@ class PosixWritableFile final : public WritableFile {//用于写入文件
   Status WriteUnbuffered(const char* data, size_t size) {
     while (size > 0) { 
       // 这里的:: 表示调用全局的 write函数
-      ssize_t write_result = ::write(fd_, data, size);
+      ssize_t write_result = ::write(fd_, data, size);// 直接调用的系统调用!
       if (write_result < 0) {
         if (errno == EINTR) {
           continue;  // Retry
@@ -820,7 +820,7 @@ void PosixEnv::Schedule(
   if (!started_background_thread_) {
     started_background_thread_ = true;
     std::thread background_thread(PosixEnv::BackgroundThreadEntryPoint, this);
-    background_thread.detach();
+    background_thread.detach();// 分离线程 相当于 join操作 需要等待，但是其他的不需要等待
   }
 
   // If the queue is empty, the background thread may be waiting for work.
@@ -828,7 +828,7 @@ void PosixEnv::Schedule(
     background_work_cv_.Signal();
   }
 
-  background_work_queue_.emplace(background_work_function, background_work_arg);
+  background_work_queue_.emplace(background_work_function, background_work_arg);// 添加任务
   background_work_mutex_.Unlock();
 }
 

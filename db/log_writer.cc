@@ -102,7 +102,6 @@ Status Writer::EmitPhysicalRecord(RecordType t, const char* ptr,
   buf[6] = static_cast<char>(t);
 
   // 通过crc 做了 校验, 防止任务出错
-  // Compute the crc of the record type and the payload.
   uint32_t crc = crc32c::Extend(type_crc_[t], ptr, length);
   crc = crc32c::Mask(crc);  // Adjust for storage
   EncodeFixed32(buf, crc);

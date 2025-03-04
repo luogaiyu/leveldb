@@ -69,7 +69,7 @@ namespace leveldb {
 // Grouping of constants.  We may want to make some of these
 // parameters set via options.
 namespace config {
-static const int kNumLevels = 7;
+static const int kNumLevels = 7; // 默认的层级数
 
 // Level-0 compaction is started when we hit this many files.
 static const int kL0_CompactionTrigger = 4;

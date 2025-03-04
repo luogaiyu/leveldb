@@ -145,7 +145,7 @@ Status WriteBatchInternal::InsertInto(const WriteBatch* b, MemTable* memtable) {
   MemTableInserter inserter;
   inserter.sequence_ = WriteBatchInternal::Sequence(b);
   inserter.mem_ = memtable;
-  return b->Iterate(&inserter);
+  return b->Iterate(&inserter);// 遍历并执行所有操作
 }
 
 void WriteBatchInternal::SetContents(WriteBatch* b, const Slice& contents) {
